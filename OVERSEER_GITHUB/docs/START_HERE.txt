@@ -1,0 +1,51 @@
+OVERSEER v1.0 - START HERE
+Made by Klavo
+==========================
+
+Unofficial fan utility. Not affiliated with Bethesda, ZeniMax, or Microsoft.
+Full legal text: LICENSE.txt
+
+
+RUN
+---
+  Double-click:  OVERSEER.exe
+  Or:            Launch OVERSEER.bat
+
+  A desktop window opens. Close the window to quit.
+
+
+FIRST 60 SECONDS
+----------------
+  1. Theme: RobCo green or Pip-Boy amber
+  2. Detect / scan for Fallout installs and plugins.txt
+  3. (Optional) Start Ollama for full chat answers
+  4. (Optional) Start RTSS if you want live FPS
+  5. Launch your game from the toolbar when ready
+
+
+DO NOT DELETE
+-------------
+  OVERSEER.exe
+  _internal\     (entire folder - required runtime)
+
+
+READ NEXT
+---------
+  README.txt     Full features, requirements, troubleshooting
+  CHANGELOG.txt  What shipped in this version
+  LICENSE.txt    MIT license + trademark / fan-work notices
+
+
+CONFIG (created on first run)
+-----------------------------
+  data\config.json
+  data\overseer.log
+
+
+NEED BROWSER MODE?
+------------------
+  Set environment variable OVERSEER_BROWSER=1 then launch again.
+  UI: http://127.0.0.1:8765/
+
+
+Stay local. Back up saves. Have fun in the wasteland.

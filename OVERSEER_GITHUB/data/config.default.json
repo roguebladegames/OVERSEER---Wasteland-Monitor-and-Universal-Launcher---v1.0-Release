@@ -1,0 +1,31 @@
+{
+  "theme": "robco",
+  "mods_path": "",
+  "plugins_txt": "",
+  "game_path": "",
+  "selected_game_id": "fallout_nv",
+  "ollama_url": "http://127.0.0.1:11434",
+  "ollama_model": "mistral",
+  "system_prompt": "",
+  "game_exe_names": [
+    "FalloutNV.exe",
+    "FalloutNVNG.exe",
+    "NewVegas.exe",
+    "FalloutNVLauncher.exe"
+  ],
+  "game_running_names": [
+    "FalloutNV.exe",
+    "FalloutNVNG.exe",
+    "NewVegas.exe"
+  ],
+  "launch_exe_names": [
+    "nvse_loader.exe",
+    "FalloutNV.exe",
+    "FalloutNVNG.exe",
+    "NewVegas.exe"
+  ],
+  "vortex_process_names": [
+    "Vortex.exe",
+    "Vortex"
+  ]
+}

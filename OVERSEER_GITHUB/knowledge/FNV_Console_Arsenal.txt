@@ -1,0 +1,164 @@
+# ============================================================
+# FALLOUT: NEW VEGAS - CONSOLE ARSENAL (Unified)
+# Combined Debug Commands + Item/NPC IDs
+# For Overseer App Integration
+# Updated: July 2026
+# ============================================================
+# Open in-game with ~ key (or ` on some keyboards)
+# Click on objects/NPCs first to target them for many commands.
+# NVSE recommended for full power and script expressions.
+# ============================================================
+
+# ==================== CORE DEBUG TOGGLES ====================
+tgm                  - Toggle God Mode (invincible + unlimited ammo)
+tcl                  - Toggle Collision (noclip / fly mode)
+tfc                  - Toggle Free Camera (add 1 to freeze time)
+tmm 1                - Toggle All Map Markers (1 = reveal all)
+tdetect              - Toggle AI Detection
+tdw                  - Toggle Debug Window
+twf                  - Toggle Wireframe Mode
+tt                   - Toggle Trees
+tfow                 - Toggle Fog of War (map)
+ts                   - Toggle Sky
+tll                  - Toggle Light Sources (performance debug)
+pcb                  - Purge Cell Buffers (helps with stuttering)
+
+# ==================== PLAYER COMMANDS ====================
+player.setlevel [X]               - Set exact player level
+player.advlevel                   - Advance one level
+player.rewardxp [amount]          - Give XP
+player.setav [stat] [value]       - Set attribute/skill (e.g. strength, sneak)
+player.modav [stat] [value]       - Modify attribute/skill
+player.addperk [perkID]           - Add perk
+player.removeperk [perkID]        - Remove perk
+player.additem [ID] [amount]      - Add item to player
+player.removeitem [ID] [amount]   - Remove item from player
+player.setcrimegold 0             - Clear current bounty
+player.moveto [refID]             - Teleport player to reference
+
+# ==================== TARGETED COMMANDS ====================
+# (Click on NPC/object first)
+kill                              - Kill selected target
+resurrect                         - Resurrect selected target
+disable                           - Disable selected target
+enable                            - Enable selected target
+inv                               - Show inventory of selected
+sexchange                         - Change gender of selected
+additem [ID] [amount]             - Add item to selected target
+removeitem [ID] [amount]          - Remove item from selected
+
+# ==================== QUEST & STORY ====================
+sqv [questID]                     - Show Quest Variables
+sqo [questID]                     - Show Quest Objectives
+setstage [questID] [stage#]       - Set quest to specific stage
+getstage [questID]                - Get current quest stage
+completequest [questID]           - Force complete quest
+resetquest [questID]              - Reset quest (removes from log)
+movetoqt                          - Move to current quest target
+showquesttargets                  - List active quest targets
+
+# ==================== POSITION & MOVEMENT ====================
+getpos [x/y/z]                    - Get current position axis
+setpos [x/y/z] [value]            - Set position
+getangle [x/y/z]                  - Get rotation
+setangle [x/y/z] [value]          - Set rotation
+getscale                          - Get current scale
+setscale [value]                  - Set scale (1.0 = normal)
+
+# ==================== PERFORMANCE & ENGINE ====================
+setgs fov [value]                 - Set Field of View
+setgs fmoverunmult [value]        - Run speed multiplier
+setgs fwalkspeedmult [value]      - Walk speed multiplier
+setgs fjumpheight [value]         - Jump height
+setgs fgamma [value]              - Gamma / brightness
+setgs foverencumberedmult [value] - Encumbrance multiplier
+
+# ==================== MISC DEBUG ====================
+help                              - List available commands
+help "keyword"                    - Search commands containing keyword
+getav [stat]                      - Get value of attribute/skill
+setav [stat] [value]              - Set value on target
+modav [stat] [value]              - Modify value on target
+
+# ============================================================
+# ITEM & SPAWN DATABASE (Common + Useful IDs)
+# Use with: player.additem [ID] [amount]
+# ============================================================
+
+# --- CURRENCY & BASIC SUPPLIES ---
+0000000F   - Bottle Caps (most common currency)
+00015169   - Stimpak
+0001516A   - Super Stimpak
+0001516B   - Doctor's Bag
+0000000A   - 5.56mm Round (common ammo)
+0000000B   - 9mm Round
+0000000C   - .308 Round
+0000000D   - .44 Magnum Round
+0000000E   - 10mm Round
+00000010   - 12 Gauge Shell
+00000011   - .45-70 Gov't Round
+
+# --- WEAPONS (Common) ---
+00004322   - 10mm Pistol
+00004323   - 10mm SMG
+00004324   - Hunting Rifle
+00004325   - Cowboy Repeater
+00004326   - .44 Magnum Revolver
+00004327   - Service Rifle
+00004328   - Assault Carbine
+00004329   - Sniper Rifle
+0000432A   - Anti-Materiel Rifle
+0000432B   - Gauss Rifle
+0000432C   - Laser Pistol
+0000432D   - Laser Rifle
+0000432E   - Plasma Pistol
+0000432F   - Plasma Rifle
+00004330   - Fat Man
+00004331   - Missile Launcher
+00004332   - Flamer
+00004333   - Minigun
+00004334   - Gatling Laser
+
+# --- ARMOR & CLOTHING ---
+0001B3B8   - Leather Armor
+0001B3B9   - Metal Armor
+0001B3BA   - Combat Armor
+0001B3BB   - Power Armor (T-51b)
+0001B3BC   - NCR Armor
+0001B3BD   - Legion Armor
+0001B3BE   - Brotherhood of Steel Armor
+0001B3BF   - Ranger Combat Armor
+
+# --- AID & CONSUMABLES ---
+0001516C   - RadAway
+0001516D   - Rad-X
+0001516E   - Jet
+0001516F   - Psycho
+00015170   - Buffout
+00015171   - Mentats
+00015172   - Fixer
+00015173   - Turbo
+00015174   - Med-X
+
+# --- MISC USEFUL ---
+0000000F   - Caps (again for quick reference)
+0001B3C0   - Lockpick
+0001B3C1   - Bobby Pin
+0001B3C2   - Stealth Boy
+0001B3C3   - Nuka-Cola
+0001B3C4   - Sunset Sarsaparilla
+
+# ============================================================
+# NOTES FOR OVERSEER INTEGRATION
+# ============================================================
+# - This file is designed to be parsed into categories for the app.
+# - Future versions will include:
+#     * Full DLC item lists
+#     * Mod-added items (via load order scanning)
+#     * User favorites & custom batches
+#     * One-click "Send to Game" with ALT+TAB support
+# - Always test heavy commands on a clean save.
+# - NVSE + Improved Console plugin greatly expands capabilities.
+#
+# Generated for your true vision of the perfect modded Mojave.
+# ============================================================

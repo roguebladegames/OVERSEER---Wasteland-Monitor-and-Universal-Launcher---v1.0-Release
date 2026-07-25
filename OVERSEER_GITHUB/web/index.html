@@ -1,0 +1,3257 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="robco">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OVERSEER v1.0 / Wasteland Monitor</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" id="favicon-klavo" />
+  <link rel="alternate icon" href="/assets/klavo-green.png?v=4" type="image/png" id="favicon-klavo-png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    :root, [data-theme="robco"] {
+      --bg: #0A0F0A; --bg-panel: #0D140D; --bg-input: #050805; --bg-elevated: #121A12;
+      --fg: #33FF66; --fg-dim: #1FA644; --fg-muted: #146B2E; --fg-bright: #A8FFC0;
+      --border: #1FA644; --warn: #FFCC33; --error: #FF5555; --selection: #1A3D24;
+      --scan: rgba(51, 255, 102, 0.04); --graph-fill: rgba(51, 255, 102, 0.18); --graph-stroke: #33FF66;
+      --scroll-thumb: #146B2E; --scroll-thumb-hover: #1FA644; --scroll-thumb-active: #33FF66;
+      --scroll-track: #050805; --scroll-border: #1FA644;
+      color-scheme: dark;
+    }
+    [data-theme="amber"] {
+      --bg: #0C0A05; --bg-panel: #141008; --bg-input: #080604; --bg-elevated: #1A150A;
+      --fg: #FFB000; --fg-dim: #C48900; --fg-muted: #8A6200; --fg-bright: #FFD966;
+      --border: #C48900; --warn: #FFEE88; --error: #FF5533; --selection: #3D2E0A;
+      --scan: rgba(255, 176, 0, 0.04); --graph-fill: rgba(255, 176, 0, 0.18); --graph-stroke: #FFB000;
+      --scroll-thumb: #8A6200; --scroll-thumb-hover: #C48900; --scroll-thumb-active: #FFB000;
+      --scroll-track: #080604; --scroll-border: #C48900;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #000; color: var(--fg);
+      font-family: "Share Tech Mono", Consolas, monospace; }
+    html {
+      /* Host scrollbar (short window / WebView2) must theme with html, not only body */
+      scrollbar-width: thin;
+      scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+      overflow-y: auto;
+    }
+    body {
+      background: var(--bg);
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scan) 2px, var(--scan) 4px);
+      min-height: 100vh; padding: 10px 12px 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+    }
+
+    /* Theme-matched scrollbars — explicit theme selectors so WebView2 swaps on GRN/AMB */
+    html, body, .wrap, .scroll, .modal, textarea, * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .wrap::-webkit-scrollbar,
+    .scroll::-webkit-scrollbar,
+    .modal::-webkit-scrollbar,
+    textarea::-webkit-scrollbar,
+    *::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    html::-webkit-scrollbar-track,
+    body::-webkit-scrollbar-track,
+    .wrap::-webkit-scrollbar-track,
+    .scroll::-webkit-scrollbar-track,
+    .modal::-webkit-scrollbar-track,
+    textarea::-webkit-scrollbar-track,
+    *::-webkit-scrollbar-track {
+      background: var(--scroll-track);
+      border-left: 1px solid var(--scroll-border);
+    }
+    html::-webkit-scrollbar-thumb,
+    body::-webkit-scrollbar-thumb,
+    .wrap::-webkit-scrollbar-thumb,
+    .scroll::-webkit-scrollbar-thumb,
+    .modal::-webkit-scrollbar-thumb,
+    textarea::-webkit-scrollbar-thumb,
+    *::-webkit-scrollbar-thumb {
+      background: var(--scroll-thumb);
+      border: 1px solid var(--scroll-border);
+      box-shadow: 0 0 6px color-mix(in srgb, var(--fg) 35%, transparent);
+    }
+    html::-webkit-scrollbar-thumb:hover,
+    body::-webkit-scrollbar-thumb:hover,
+    *::-webkit-scrollbar-thumb:hover {
+      background: var(--scroll-thumb-hover);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--fg) 55%, transparent);
+    }
+    html::-webkit-scrollbar-thumb:active,
+    body::-webkit-scrollbar-thumb:active,
+    *::-webkit-scrollbar-thumb:active {
+      background: var(--scroll-thumb-active);
+    }
+    html::-webkit-scrollbar-corner,
+    body::-webkit-scrollbar-corner,
+    *::-webkit-scrollbar-corner {
+      background: var(--scroll-track);
+    }
+    /* Concrete fallbacks (WebView2 sometimes caches var-only scrollbar styles) */
+    html[data-theme="robco"], body[data-theme="robco"] {
+      scrollbar-color: #146B2E #050805;
+    }
+    html[data-theme="amber"], body[data-theme="amber"] {
+      scrollbar-color: #8A6200 #080604;
+    }
+    html[data-theme="robco"]::-webkit-scrollbar-thumb,
+    body[data-theme="robco"]::-webkit-scrollbar-thumb {
+      background: #146B2E; border-color: #1FA644;
+    }
+    html[data-theme="amber"]::-webkit-scrollbar-thumb,
+    body[data-theme="amber"]::-webkit-scrollbar-thumb {
+      background: #8A6200; border-color: #C48900;
+    }
+    html[data-theme="robco"]::-webkit-scrollbar-track,
+    body[data-theme="robco"]::-webkit-scrollbar-track {
+      background: #050805; border-left-color: #1FA644;
+    }
+    html[data-theme="amber"]::-webkit-scrollbar-track,
+    body[data-theme="amber"]::-webkit-scrollbar-track {
+      background: #080604; border-left-color: #C48900;
+    }
+    .wrap {
+      max-width: 1100px; margin: 0 auto; border: 1px solid var(--border); background: var(--bg-panel);
+      box-shadow: 0 0 28px color-mix(in srgb, var(--fg) 14%, transparent);
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+      text-transform: uppercase; letter-spacing: 0.08em; font-size: 13px;
+      box-sizing: border-box;
+    }
+    header .title {
+      color: var(--fg-bright); font-weight: bold;
+      line-height: 1.2; font-size: 13px;
+    }
+    header .meta { color: var(--fg-dim); font-size: 11px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    header .score { color: var(--fg-bright); }
+    header .theme-switch {
+      display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--border);
+      background: var(--bg-input); margin-left: 4px;
+    }
+    header .theme-switch button {
+      font-size: 9px; padding: 3px 7px; border: none; border-right: 1px solid var(--border);
+      background: transparent; color: var(--fg-muted); letter-spacing: 0.06em;
+      box-shadow: none;
+    }
+    header .theme-switch button:last-child { border-right: none; }
+    header .theme-switch button:hover {
+      background: var(--selection); color: var(--fg-bright); box-shadow: none;
+    }
+    header .theme-switch button.active {
+      background: var(--selection); color: var(--fg-bright);
+    }
+
+    .toolbar {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+      padding: 6px 12px; border-bottom: 1px solid var(--border);
+    }
+    .toolbar .hint { margin-left: auto; font-size: 10px; color: var(--fg-muted); text-transform: uppercase; }
+
+    button {
+      font-family: inherit; font-size: 11px; background: var(--bg-elevated); color: var(--fg);
+      border: 1px solid var(--border); padding: 6px 10px; cursor: pointer;
+      text-transform: uppercase; letter-spacing: 0.05em; border-radius: 0;
+    }
+    button:hover, button.active {
+      background: var(--selection); color: var(--fg-bright);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--fg) 25%, transparent);
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .radio-controls button:disabled { cursor: not-allowed; }
+    button.launch {
+      background: var(--selection); color: var(--fg-bright); border-color: var(--fg);
+      font-weight: bold; letter-spacing: 0.12em; padding: 6px 14px;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--fg) 30%, transparent);
+    }
+    button.launch:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--fg) 22%, var(--bg-elevated));
+    }
+    button.launch:disabled { opacity: 0.45; cursor: not-allowed; }
+    .launch-split {
+      display: inline-flex;
+      align-items: stretch;
+      position: relative;
+      vertical-align: middle;
+    }
+    .launch-split > button.launch {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      min-width: 9.5rem;
+    }
+    .launch-split > button.launch-caret {
+      background: var(--selection);
+      color: var(--fg-bright);
+      border: 1px solid var(--fg);
+      border-left: 1px solid color-mix(in srgb, var(--fg) 40%, transparent);
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      padding: 0 0.45rem;
+      min-width: 1.7rem;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--fg) 30%, transparent);
+    }
+    .launch-split > button.launch-caret:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--fg) 22%, var(--bg-elevated));
+    }
+    .launch-split > button.launch-caret:disabled { opacity: 0.45; cursor: not-allowed; }
+    .launch-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 300px;
+      max-width: min(440px, 92vw);
+      max-height: 380px;
+      overflow-y: auto;
+      z-index: 80;
+      background: var(--bg-elevated, var(--bg));
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      padding: 4px 0;
+    }
+    .launch-menu.open { display: block; }
+    .launch-menu .lm-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--fg);
+      padding: 8px 12px;
+      cursor: pointer;
+      font: inherit;
+      border-radius: 0;
+      box-shadow: none;
+      letter-spacing: normal;
+      font-weight: normal;
+    }
+    .launch-menu .lm-item:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--fg) 12%, transparent);
+    }
+    .launch-menu .lm-item:disabled { opacity: 0.4; cursor: not-allowed; }
+    .launch-menu .lm-item.selected {
+      outline: 1px solid var(--fg);
+      outline-offset: -1px;
+    }
+    .launch-menu .lm-item.running .lm-title::after {
+      content: " · LIVE";
+      color: var(--fg-bright);
+      font-size: 10px;
+    }
+    .launch-menu .lm-title {
+      font-weight: 700;
+      color: var(--fg-bright, var(--fg));
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .launch-menu .lm-meta {
+      font-size: 10px;
+      color: var(--fg-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .launch-menu .lm-head {
+      padding: 6px 12px 4px;
+      font-size: 10px;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .launch-menu .lm-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .path-bar {
+      display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;
+      padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg);
+      font-size: 11px;
+    }
+    .path-bar label { display: block; color: var(--fg-muted); text-transform: uppercase; font-size: 10px; margin-bottom: 3px; }
+    .path-bar input {
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--fg);
+      font-family: inherit; font-size: 11px; padding: 6px 8px; outline: none;
+    }
+    .path-bar .actions { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
+
+    .perf-dash {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      align-items: start; /* don't stretch left metrics to match tall Game+links column */
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .perf-left, .perf-right {
+      padding: 10px 12px;
+      align-self: start;
+    }
+    .perf-left {
+      border-right: 1px solid var(--border);
+      /* content-sized — no leftover void under stacked graphs */
+      height: fit-content;
+    }
+    .perf-right { height: fit-content; }
+    .section-label {
+      margin: 0 0 8px; font-size: 11px; color: var(--fg-dim); text-transform: uppercase;
+      letter-spacing: 0.1em; border-bottom: 1px solid var(--border); padding-bottom: 4px;
+    }
+    .section-label span { color: var(--fg-muted); font-size: 10px; margin-left: 8px; }
+    /* Stacked for a narrower/compact metrics column */
+    .graph-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .graph-card { border: 1px solid var(--border); background: var(--bg-input); padding: 5px 8px 3px; }
+    .graph-card.na { opacity: 0.85; }
+    .graph-card .g-head {
+      display: flex; justify-content: space-between; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--fg-dim); margin-bottom: 3px;
+    }
+    .graph-card .g-head strong { color: var(--fg-bright); font-weight: normal; }
+    .graph-card .g-head .hot { color: var(--warn); }
+    .graph-card .g-head .muted { color: var(--fg-muted); }
+    .graph-card canvas { display: block; width: 100%; height: 44px; }
+    .graph-note { font-size: 10px; color: var(--fg-muted); margin: 6px 0 0; line-height: 1.35; }
+    .fps-actions {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .fps-actions button {
+      font-family: inherit; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 4px 10px;
+      background: var(--bg-input); color: var(--fg); border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .fps-actions button:hover:not(:disabled) { border-color: var(--fg-dim); color: var(--fg-bright); }
+    .fps-actions button:disabled { opacity: 0.45; cursor: default; }
+    .fps-hint { font-size: 10px; color: var(--fg-muted); }
+
+    .bench-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 11px; }
+    .bench-item {
+      display: flex; justify-content: space-between; gap: 8px; border: 1px solid var(--border);
+      background: var(--bg-input); padding: 5px 8px;
+    }
+    .bench-item .k { color: var(--fg-muted); text-transform: uppercase; font-size: 10px; }
+    .bench-item .v { color: var(--fg-bright); }
+    .bench-item .v.warn { color: var(--warn); }
+
+    /* Klavo mark sits between bench metrics (objects) and status link rows */
+    .links-brand {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      padding: 12px 14px;
+      min-height: 120px;
+      box-sizing: border-box;
+    }
+    .links-brand .wm-icon-img {
+      display: block;
+      width: 96px; height: 96px;
+      min-width: 96px; min-height: 96px;
+      flex: 0 0 96px;
+      image-rendering: auto;
+      /* Subject-only cutout — no plate / square frame */
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 0;
+      box-sizing: border-box;
+      object-fit: contain;
+      border-radius: 0;
+      box-shadow: none;
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--fg) 45%, transparent));
+    }
+    .mod-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 0 0 8px 0;
+      padding: 0;
+    }
+    .mod-tabs button {
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      background: var(--bg-input);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      box-shadow: none;
+    }
+    .mod-tabs button:hover { color: var(--fg-bright); border-color: var(--fg-dim, var(--fg)); }
+    .mod-tabs button.active {
+      color: var(--fg-bright);
+      border-color: var(--fg);
+      background: color-mix(in srgb, var(--fg) 12%, var(--bg-input));
+    }
+    .mod-tabs button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .mod-tabs .tab-count {
+      color: var(--fg-muted);
+      margin-left: 4px;
+      font-size: 9px;
+    }
+    .mod-tabs button.active .tab-count { color: var(--fg); }
+    .mod-meta {
+      font-size: 10px;
+      color: var(--fg-muted);
+      margin: 0 0 6px 0;
+      letter-spacing: 0.04em;
+    }
+    .links-brand .wm-label {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      white-space: nowrap;
+    }
+    .link-status {
+      margin-top: 8px; border: 1px solid var(--border); padding: 6px 8px; font-size: 11px; display: grid; gap: 3px;
+    }
+    .link-status .row { display: flex; justify-content: space-between; gap: 8px; }
+    .link-status .ok { color: var(--fg); }
+    .link-status .warn { color: var(--warn); }
+    .link-status .bad { color: var(--error); }
+
+    /* RobCo Broadcast Relay — fully fixed geometry (buttons never reflow layout) */
+    .radio-strip {
+      border-bottom: 1px solid var(--border); background: var(--bg);
+      padding: 10px 12px 10px;
+      height: 196px;
+      min-height: 196px;
+      max-height: 196px;
+      box-sizing: border-box;
+      overflow: hidden;
+      contain: layout size style;
+    }
+    .radio-strip .section-label {
+      margin: 0 0 8px; height: 18px; max-height: 18px; overflow: hidden;
+      white-space: nowrap; text-overflow: ellipsis;
+    }
+    .radio-strip .section-label #radio-subtitle {
+      display: inline-block; max-width: 42ch; overflow: hidden;
+      text-overflow: ellipsis; vertical-align: bottom;
+    }
+    .radio-body {
+      display: grid;
+      grid-template-columns: 136px minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+      height: 120px;
+      min-height: 120px;
+      max-height: 120px;
+    }
+    .radio-controls {
+      display: flex; flex-direction: column; gap: 6px;
+      width: 136px; min-width: 136px; max-width: 136px;
+      height: 120px; overflow: hidden;
+    }
+    .radio-controls button {
+      width: 136px; height: 32px; min-height: 32px; max-height: 32px;
+      padding: 0 6px; font-size: 11px; letter-spacing: 0.06em;
+      box-sizing: border-box; flex: 0 0 32px;
+      overflow: hidden; white-space: nowrap; text-overflow: clip;
+      /* kill global hover glow that can look like a size jump */
+      box-shadow: none !important;
+    }
+    .radio-controls button:hover,
+    .radio-controls button.active-play {
+      background: var(--selection); color: var(--fg-bright); border-color: var(--fg);
+      box-shadow: none !important;
+    }
+    .radio-controls button:disabled {
+      opacity: 0.45;
+    }
+    .radio-meta {
+      font-size: 10px; color: var(--fg-muted); text-transform: uppercase;
+      letter-spacing: 0.05em; line-height: 1.35; margin-top: 0;
+      height: 44px; min-height: 44px; max-height: 44px; overflow: hidden;
+      flex: 0 0 44px;
+    }
+    .radio-meta .live { color: var(--fg); }
+    .radio-meta .hot { color: var(--warn); }
+    .radio-scope {
+      border: 1px solid var(--border); background: var(--bg-input);
+      padding: 6px 8px 4px; min-width: 0;
+      height: 120px; min-height: 120px; max-height: 120px;
+      box-sizing: border-box; overflow: hidden;
+    }
+    .radio-scope .g-head {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--fg-dim); margin-bottom: 4px;
+      height: 14px; min-height: 14px; max-height: 14px; overflow: hidden;
+    }
+    .radio-scope .g-head strong {
+      color: var(--fg-bright); font-weight: normal;
+      width: 6.5em; min-width: 6.5em; text-align: right;
+      overflow: hidden; white-space: nowrap;
+    }
+    .radio-scope .g-head .freq {
+      color: var(--fg); letter-spacing: 0.12em;
+      width: 6em; min-width: 6em; text-align: center;
+    }
+    .radio-scope canvas {
+      display: block; width: 100%; height: 88px; min-height: 88px; max-height: 88px;
+      image-rendering: pixelated;
+    }
+    .radio-note {
+      font-size: 10px; color: var(--fg-muted); margin: 6px 0 0; line-height: 1.35;
+      height: 28px; min-height: 28px; max-height: 28px; overflow: hidden;
+      white-space: nowrap; text-overflow: ellipsis;
+    }
+    .dot {
+      display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--fg);
+      box-shadow: 0 0 6px var(--fg); vertical-align: middle;
+    }
+    .dot.warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+    .dot.off { background: var(--fg-muted); box-shadow: none; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1.3fr; min-height: 260px; }
+    .panel { border-right: 1px solid var(--border); padding: 10px; background: var(--bg); display: flex; flex-direction: column; }
+    .panel:last-child { border-right: none; }
+    .panel h2 {
+      margin: 0 0 10px; font-size: 12px; color: var(--fg-dim); text-transform: uppercase;
+      letter-spacing: 0.1em; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+    }
+    .scroll { overflow: auto; flex: 1; max-height: 220px; font-size: 11px; line-height: 1.55; }
+    /* Read-only status lists — not clickable; no fake selection */
+    .scroll .item {
+      padding: 1px 4px; cursor: default; user-select: text;
+      background: transparent; color: inherit;
+    }
+    .scroll .item::before { content: "> "; color: var(--fg-muted); }
+    .scroll .item:hover,
+    .scroll .item:focus,
+    .scroll .item:active {
+      background: transparent; color: inherit; outline: none;
+    }
+    .scroll .item.miss { color: var(--error); }
+    .scroll .item.miss:hover { color: var(--error); background: transparent; }
+    .scroll .empty { color: var(--fg-muted); font-size: 11px; }
+
+    .log { font-size: 12px; line-height: 1.55; color: var(--fg-dim); flex: 1; overflow: auto; max-height: 200px; }
+    .log .info { color: var(--fg); }
+    .log .warn { color: var(--warn); }
+    .log .err { color: var(--error); }
+    .log .sys { color: var(--fg-bright); }
+    .log .user { color: var(--fg-dim); margin-top: 8px; }
+    .log .bot { color: var(--fg); margin-top: 4px; white-space: pre-wrap; }
+
+    .chat-in { margin-top: 10px; display: flex; gap: 6px; }
+    .chat-in input {
+      flex: 1; background: var(--bg-input); border: 1px solid var(--border); color: var(--fg);
+      font-family: inherit; font-size: 12px; padding: 8px; outline: none;
+    }
+    .chat-in input::placeholder { color: var(--fg-muted); }
+
+    footer {
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+      padding: 8px 14px; border-top: 1px solid var(--border); font-size: 11px;
+      color: var(--fg-muted); background: var(--bg); text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    footer .live { color: var(--fg); }
+
+    /* GRIMOIRE-style LLM / system prompt modals */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.72); align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    /* Nested system-prompt must sit above LLM modal */
+    .modal-backdrop.prompt-layer { z-index: 1200; }
+    .modal-backdrop.console-layer { z-index: 1100; }
+    .modal {
+      width: min(560px, 100%); max-height: min(90vh, 720px); overflow: auto;
+      background: var(--bg-panel); border: 1px solid var(--border); color: var(--fg);
+      box-shadow: 0 0 40px color-mix(in srgb, var(--fg) 18%, transparent);
+      padding: 14px 16px 16px;
+      position: relative;
+    }
+    .modal.wide { width: min(760px, 100%); max-height: min(92vh, 860px); }
+    .modal h3 {
+      margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--fg-bright); border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    }
+    .modal .blurb {
+      font-size: 11px; color: var(--fg-dim); line-height: 1.5; margin: 0 0 12px;
+    }
+    .modal .box {
+      border: 1px solid var(--border); background: var(--bg-input); padding: 10px; margin-bottom: 12px;
+      font-size: 11px; line-height: 1.5; color: var(--fg-dim);
+    }
+    .modal .box code { color: var(--fg-bright); }
+    .modal .status { font-size: 12px; margin-bottom: 10px; line-height: 1.45; }
+    .modal .status.ok { color: var(--fg); }
+    .modal .status.warn { color: var(--warn); }
+    .modal .status.bad { color: var(--error); }
+    .modal label.field {
+      display: block; font-size: 10px; text-transform: uppercase; color: var(--fg-muted);
+      letter-spacing: 0.08em; margin: 0 0 4px;
+    }
+    .modal select, .modal input[type="text"], .modal textarea {
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--fg);
+      font-family: inherit; font-size: 12px; padding: 8px; outline: none; margin-bottom: 10px;
+      color-scheme: dark;
+    }
+    .modal select {
+      height: 36px; cursor: pointer;
+      /* Windows Chromium often paints option list wrong without explicit option colors */
+    }
+    .modal select option {
+      background: #0a0f0a; color: #33ff66;
+    }
+    [data-theme="amber"] .modal select option {
+      background: #0c0a05; color: #ffb000;
+    }
+    .modal textarea { min-height: 280px; resize: vertical; line-height: 1.45; }
+    .modal textarea.console-script { min-height: 160px; }
+    .modal .row-btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+    .modal .row-btns .spacer { flex: 1; }
+    .modal .prompt-meta { font-size: 11px; color: var(--fg-muted); margin: 4px 0 10px; }
+    .modal .warn-line { font-size: 11px; color: var(--warn); min-height: 1.2em; margin-bottom: 8px; }
+    .model-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow: auto;
+      margin: 0 0 10px; padding: 6px; border: 1px solid var(--border); background: var(--bg-input);
+    }
+    .model-chips button {
+      font-size: 10px; padding: 4px 8px; text-transform: none; letter-spacing: 0;
+    }
+    .model-chips button.picked {
+      background: var(--selection); color: var(--fg-bright); border-color: var(--fg);
+    }
+    .model-chips .empty { color: var(--fg-muted); font-size: 11px; }
+    .preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .preset-row button { font-size: 10px; padding: 4px 8px; text-transform: none; }
+
+    @media (max-width: 960px) {
+      .perf-dash, .grid, .path-bar { grid-template-columns: 1fr; }
+      .perf-left { border-right: none; border-bottom: 1px solid var(--border); }
+      .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body data-theme="robco">
+  <div class="wrap">
+    <header>
+      <div class="title">OVERSEER v1.0 / WASTELAND MONITOR</div>
+      <div class="meta">
+        <span class="score" id="stability">Stability: —</span>
+        <span>|</span>
+        <span id="llm-label">LLM: …</span>
+        <span class="theme-switch" title="Display phosphor">
+          <button type="button" id="btn-robco" class="active" onclick="setTheme('robco')" title="RobCo Green">GRN</button>
+          <button type="button" id="btn-amber" onclick="setTheme('amber')" title="Pip-Boy Amber">AMB</button>
+        </span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="launch-split" id="launch-split">
+        <button type="button" id="btn-launch" class="launch" onclick="launchGame()" title="Launch selected Fallout game">▶ Launch FNV</button>
+        <button type="button" id="btn-launch-caret" class="launch-caret" onclick="toggleLaunchMenu(event)" title="Choose Fallout title" aria-haspopup="listbox" aria-expanded="false">▾</button>
+        <div class="launch-menu" id="launch-menu" role="listbox" aria-label="Fallout games"></div>
+      </div>
+      <button type="button" id="btn-llm" onclick="openLlmModal()" title="Pick Ollama model + system prompt">LLM…</button>
+      <button type="button" id="btn-prompt" onclick="openPromptModal()" title="Edit Overseer system prompt">Prompt</button>
+      <button type="button" id="btn-console" onclick="openConsoleModal()" title="FNV console batch writer">Console</button>
+      <button type="button" onclick="autoDetect()">Detect</button>
+      <button type="button" onclick="scanFalloutGames(true)">Games</button>
+      <button type="button" onclick="rescanDocs()">Docs</button>
+      <button type="button" onclick="rescanMods()">Mods</button>
+      <span class="hint" id="boot-hint">booting…</span>
+    </div>
+
+    <div class="path-bar">
+      <div>
+        <label>Mods / Data folder (.esm .esp .esl)</label>
+        <input id="mods-path" type="text" placeholder="e.g. …\Fallout New Vegas\Data" />
+      </div>
+      <div>
+        <label>plugins.txt / loadorder.txt (Vortex / game)</label>
+        <input id="plugins-txt" type="text" placeholder="e.g. %LOCALAPPDATA%\FalloutNV\plugins.txt" />
+      </div>
+      <div class="actions">
+        <button type="button" onclick="saveAndScanMods()">Save + Scan</button>
+      </div>
+    </div>
+
+    <section class="perf-dash">
+      <div class="perf-left">
+        <h2 class="section-label">Live metrics // CPU / RAM / GPU / Fallout FPS <span>real-time</span></h2>
+        <div class="graph-row">
+          <div class="graph-card" id="card-cpu">
+            <div class="g-head"><span>CPU (host)</span><strong id="val-cpu">—</strong></div>
+            <canvas id="graph-cpu" height="44"></canvas>
+          </div>
+          <div class="graph-card" id="card-ram">
+            <div class="g-head"><span>RAM (host)</span><strong id="val-ram">—</strong></div>
+            <canvas id="graph-ram" height="44"></canvas>
+          </div>
+          <div class="graph-card" id="card-gpu">
+            <div class="g-head"><span>GPU</span><strong id="val-gpu" class="muted">—</strong></div>
+            <canvas id="graph-gpu" height="44"></canvas>
+          </div>
+          <div class="graph-card na" id="card-fps">
+            <div class="g-head">
+              <span id="lbl-fps">Game FPS</span>
+              <strong id="val-fps" class="muted">—</strong>
+            </div>
+            <canvas id="graph-fps" height="44"></canvas>
+          </div>
+        </div>
+        <div class="fps-actions">
+          <button type="button" id="btn-fps-hook" onclick="enableFpsCapture()" title="Measure real game presents via PresentMon (UAC once)">Enable real FPS</button>
+          <button type="button" id="btn-fps-stop" onclick="stopFpsCapture()" title="Stop PresentMon capture" disabled>Stop FPS</button>
+          <span class="fps-hint" id="fps-hint">Real FPS = RTSS / Afterburner / PresentMon (any Fallout title)</span>
+        </div>
+        <p class="graph-note" id="perf-note">
+          In-game FPS from RTSS, MSI Afterburner, or PresentMon for any running Fallout title. Host graphs = CPU/RAM/GPU.
+        </p>
+      </div>
+      <div class="perf-right">
+        <h2 class="section-label">Game + system <span>links</span></h2>
+        <div class="bench-grid">
+          <div class="bench-item"><span class="k">Title</span><span class="v" id="b-game-title">—</span></div>
+          <div class="bench-item"><span class="k">Process</span><span class="v" id="b-game">—</span></div>
+          <div class="bench-item"><span class="k">Game RAM</span><span class="v" id="b-game-ram">—</span></div>
+          <div class="bench-item"><span class="k">Game CPU</span><span class="v" id="b-game-cpu">—</span></div>
+          <div class="bench-item"><span class="k">In-game FPS</span><span class="v warn" id="b-fps">N/A</span></div>
+          <div class="bench-item"><span class="k">Installed</span><span class="v" id="b-games-count">—</span></div>
+          <div class="bench-item"><span class="k">Docs chunks</span><span class="v" id="b-docs">—</span></div>
+          <div class="bench-item"><span class="k">Plugins</span><span class="v" id="b-mods">—</span></div>
+          <div class="bench-item"><span class="k">Launch via</span><span class="v" id="b-launch">—</span></div>
+          <div class="bench-item"><span class="k">Vortex</span><span class="v" id="b-vortex">—</span></div>
+        </div>
+        <div class="links-brand" title="Made by Klavo">
+          <img class="wm-icon-img" id="wm-klavo-img" src="/assets/klavo-green-96.png?v=4" width="96" height="96" alt="Klavo" />
+          <span class="wm-label">Made by Klavo</span>
+        </div>
+        <div class="link-status">
+          <div class="row"><span><span class="dot off" id="dot-game"></span>Game</span><span id="st-game" class="warn">—</span></div>
+          <div class="row"><span><span class="dot off" id="dot-nvse"></span>Extender</span><span id="st-nvse" class="warn">—</span></div>
+          <div class="row"><span><span class="dot off" id="dot-vortex"></span>Vortex</span><span id="st-vortex" class="warn">—</span></div>
+          <div class="row"><span><span class="dot off" id="dot-ollama"></span>Ollama</span><span id="st-ollama" class="warn">—</span></div>
+          <div class="row"><span><span class="dot off" id="dot-docs"></span>Knowledge</span><span id="st-docs" class="warn">—</span></div>
+          <div class="row"><span><span class="dot off" id="dot-mods"></span>Mods</span><span id="st-mods" class="warn">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="radio-strip" aria-label="RobCo Broadcast Relay">
+      <h2 class="section-label">
+        RobCo Broadcast Relay // carrier spectrum
+        <span id="radio-subtitle">Mojave airwave monitor · system loopback</span>
+      </h2>
+      <div class="radio-body">
+        <div class="radio-controls">
+          <button type="button" id="btn-radio-play" onclick="radioPlay()" title="Lock onto system audio (WASAPI loopback)">▶ TUNE IN</button>
+          <button type="button" id="btn-radio-pause" onclick="radioPause()" title="Release carrier" disabled>❚❚ STAND BY</button>
+          <div class="radio-meta" id="radio-meta">
+            Status: <span class="hot">NO CARRIER</span><br />
+            Src: —<br />
+            Lvl: — · rms — · f —
+          </div>
+        </div>
+        <div class="radio-scope">
+          <div class="g-head">
+            <span>Signal trace</span>
+            <span class="freq" id="radio-freq">98.3 MHZ</span>
+            <strong id="radio-strength">———</strong>
+          </div>
+          <canvas id="graph-radio" height="88"></canvas>
+        </div>
+      </div>
+      <p class="radio-note" id="radio-note">
+        Tune in locks a WASAPI loopback on the default playback device (game / browser / anything on speakers). Stand by stops capture only — it does not pause YouTube or FNV.
+      </p>
+    </section>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Knowledge / docs</h2>
+        <div class="scroll" id="docs-list"><div class="empty">Scanning…</div></div>
+      </div>
+      <div class="panel">
+        <h2>Load order / plugins</h2>
+        <div class="mod-tabs" id="mod-tabs" role="tablist" aria-label="Fallout game mods"></div>
+        <p class="mod-meta" id="mod-meta">Select a game tab · Scan all titles</p>
+        <div class="scroll" id="mods-list"><div class="empty">Set Data path or plugins.txt, then Scan — or open a game tab.</div></div>
+      </div>
+      <div class="panel">
+        <h2>Chat with Overseer</h2>
+        <div class="log" id="chat-log">
+          <div class="sys">**Overseer Online.** Booting terminal…</div>
+        </div>
+        <div class="chat-in">
+          <input id="chat-input" type="text" placeholder=">_ Ask about dirty edits, load order, crashes…" />
+          <button type="button" id="btn-send" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>event log // rogueblade // overseer // local 127.0.0.1</span>
+      <span class="live" id="footer-stats">Status: BOOT…</span>
+    </footer>
+  </div>
+
+  <!-- LLM setup -->
+  <div class="modal-backdrop" id="modal-llm" role="dialog" aria-modal="true" aria-labelledby="llm-title">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3 id="llm-title">OVERSEER — LLM setup</h3>
+      <p class="blurb">Local Ollama only. Pick a chat model, then Save.</p>
+      <div class="status warn" id="llm-status">Checking Ollama…</div>
+      <label class="field" for="llm-url">Ollama URL</label>
+      <input id="llm-url" type="text" placeholder="http://127.0.0.1:11434" />
+      <label class="field">Chat models <span style="color:var(--fg-muted);font-weight:normal">(click one)</span></label>
+      <div class="model-chips" id="llm-model-chips"><span class="empty">Loading…</span></div>
+      <label class="field" for="llm-model">Selected</label>
+      <select id="llm-model" size="1"></select>
+      <input id="llm-model-manual" type="hidden" />
+      <datalist id="llm-model-list"></datalist>
+      <div class="warn-line" id="llm-warn"></div>
+      <div class="prompt-meta" id="llm-prompt-meta">System prompt: —</div>
+      <div class="row-btns">
+        <button type="button" id="btn-llm-refresh" onclick="refreshLlmModal()">Refresh</button>
+        <button type="button" onclick="openPromptModal()">System prompt</button>
+        <span class="spacer"></span>
+        <button type="button" onclick="closeLlmModal()">Cancel</button>
+        <button type="button" class="launch" id="btn-llm-save" onclick="saveLlmModal()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop prompt-layer" id="modal-prompt" role="dialog" aria-modal="true" aria-labelledby="prompt-title">
+    <div class="modal wide" onclick="event.stopPropagation()">
+      <h3 id="prompt-title">OVERSEER — System prompt</h3>
+      <p class="blurb">
+        This is the system directive Overseer follows when answering. It does not change your
+        mods or knowledge index — only how answers are framed. <b>Reset to default</b> restores
+        the built-in protocol from <code>knowledge/OVERSEER_PROTOCOL.txt</code>.
+      </p>
+      <div class="status warn" id="prompt-status">Loading…</div>
+      <label class="field" for="prompt-editor">System directive</label>
+      <textarea id="prompt-editor" placeholder="Loading system prompt…" spellcheck="false"></textarea>
+      <div class="prompt-meta" id="prompt-meta-line">—</div>
+      <div class="warn-line" id="prompt-warn"></div>
+      <div class="row-btns">
+        <button type="button" id="btn-prompt-reset" onclick="resetPromptEditor()">Reset to default</button>
+        <span class="spacer"></span>
+        <button type="button" onclick="closePromptModal()">Cancel</button>
+        <button type="button" class="launch" id="btn-prompt-save" onclick="savePromptModal()">Save prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FNV console batch (engine bat file — not remote inject) -->
+  <div class="modal-backdrop console-layer" id="modal-console" role="dialog" aria-modal="true" aria-labelledby="console-title">
+    <div class="modal wide" onclick="event.stopPropagation()">
+      <h3 id="console-title">OVERSEER — FNV console batch</h3>
+      <p class="blurb">
+        New Vegas has <b>no remote console API</b>. OVERSEER writes a multi-line
+        <code>.txt</code> batch into your game folder. In-game, open the console (~)
+        and run <code id="console-bat-hint">bat overseer</code> once to execute every line.
+      </p>
+      <div class="status warn" id="console-status">Checking game path…</div>
+      <label class="field">Presets (append)</label>
+      <div class="preset-row" id="console-presets"></div>
+      <label class="field" for="console-script">Commands (one per line)</label>
+      <textarea id="console-script" class="console-script" placeholder="tgm&#10;player.additem 0000000f 5000&#10;fov 95"></textarea>
+      <label class="field" for="console-name">Batch name (file: &lt;name&gt;.txt)</label>
+      <input id="console-name" type="text" value="overseer" />
+      <div class="warn-line" id="console-warn"></div>
+      <div class="row-btns">
+        <button type="button" onclick="clearConsoleScript()">Clear</button>
+        <button type="button" onclick="copyConsoleBatCmd()">Copy “bat …” command</button>
+        <span class="spacer"></span>
+        <button type="button" onclick="closeConsoleModal()">Close</button>
+        <button type="button" class="launch" onclick="writeConsoleBatch()">Write batch to game folder</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const N = 48;
+    const series = {
+      cpu: Array(N).fill(0),
+      ram: Array(N).fill(0),
+      gpu: Array(N).fill(0),
+      fps: Array(N).fill(0),
+    };
+    let chatHistory = [];
+    let gpuLive = false;
+    let fpsLive = false;
+    let fpsMaxY = 120;
+    let launchBusy = false;
+    /** Multi-game launcher state */
+    let falloutGames = [];
+    let selectedGameId = 'fallout_nv';
+    let launchMenuOpen = false;
+    /** @type {{ default_system_prompt?: string, system_prompt?: string, system_prompt_custom?: boolean, ollama_model?: string, ollama_url?: string, models?: string[] } | null} */
+    let llmState = null;
+    /** Draft prompt while nested modal is open (saved only on Save). */
+    let promptDraft = '';
+
+    function setTheme(name) {
+      // Set on both html + body so host/WebView2 scrollbars re-theme
+      document.documentElement.setAttribute('data-theme', name);
+      document.body.setAttribute('data-theme', name);
+      const robco = document.getElementById('btn-robco');
+      const amber = document.getElementById('btn-amber');
+      if (robco) robco.classList.toggle('active', name === 'robco');
+      if (amber) amber.classList.toggle('active', name === 'amber');
+      // Theme-matched phosphor watermark (Klavo.jpg → green / amber)
+      const themed = name === 'amber'
+        ? '/assets/klavo-amber-96.png?v=4'
+        : '/assets/klavo-green-96.png?v=4';
+      // Window/taskbar brand icon stays klavo.ico; themed PNG is decorative watermark only
+      const img = document.getElementById('wm-klavo-img');
+      if (img) img.src = themed;
+      const fav = document.getElementById('favicon-klavo');
+      if (fav) {
+        fav.setAttribute('href', '/favicon.ico');
+        fav.setAttribute('type', 'image/x-icon');
+      }
+      const favPng = document.getElementById('favicon-klavo-png');
+      if (favPng) {
+        favPng.setAttribute('href', name === 'amber' ? '/assets/klavo-amber.png?v=4' : '/assets/klavo-green.png?v=4');
+      }
+      // Force scrollbar style refresh (Edge/WebView2 can stick on first theme)
+      applyScrollbarTheme(name);
+      fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: name }),
+      }).catch(() => {});
+      Object.keys(series).forEach(drawGraph);
+      if (typeof drawRadio === 'function') drawRadio();
+    }
+
+    function applyScrollbarTheme(name) {
+      const isAmber = name === 'amber';
+      const thumb = isAmber ? '#8A6200' : '#146B2E';
+      const track = isAmber ? '#080604' : '#050805';
+      const border = isAmber ? '#C48900' : '#1FA644';
+      const hover = isAmber ? '#C48900' : '#1FA644';
+      const active = isAmber ? '#FFB000' : '#33FF66';
+      const root = document.documentElement;
+      root.style.setProperty('--scroll-thumb', thumb);
+      root.style.setProperty('--scroll-thumb-hover', hover);
+      root.style.setProperty('--scroll-thumb-active', active);
+      root.style.setProperty('--scroll-track', track);
+      root.style.setProperty('--scroll-border', border);
+      root.style.scrollbarColor = thumb + ' ' + track;
+      document.body.style.scrollbarColor = thumb + ' ' + track;
+      // Inject/update a live style tag so webkit scrollbar pseudos rebind
+      let tag = document.getElementById('theme-scroll-live');
+      if (!tag) {
+        tag = document.createElement('style');
+        tag.id = 'theme-scroll-live';
+        document.head.appendChild(tag);
+      }
+      tag.textContent =
+        'html,body,*{scrollbar-color:' + thumb + ' ' + track + ' !important;}' +
+        'html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb,*::-webkit-scrollbar-thumb{' +
+        'background:' + thumb + ' !important;border-color:' + border + ' !important;}' +
+        'html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover,*::-webkit-scrollbar-thumb:hover{' +
+        'background:' + hover + ' !important;}' +
+        'html::-webkit-scrollbar-thumb:active,body::-webkit-scrollbar-thumb:active,*::-webkit-scrollbar-thumb:active{' +
+        'background:' + active + ' !important;}' +
+        'html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,*::-webkit-scrollbar-track{' +
+        'background:' + track + ' !important;border-left-color:' + border + ' !important;}';
+    }
+
+    function cssVar(n) {
+      return getComputedStyle(document.body).getPropertyValue(n).trim();
+    }
+
+    function pushVal(key, v) {
+      series[key].push(v);
+      if (series[key].length > N) series[key].shift();
+    }
+
+    function drawGraph(key) {
+      const canvas = document.getElementById('graph-' + key);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth || 200;
+      const h = 44;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const data = series[key];
+      let maxY = 100;
+      if (key === 'fps') {
+        maxY = Math.max(60, fpsMaxY);
+      }
+      const stroke = cssVar('--graph-stroke');
+      const fill = cssVar('--graph-fill');
+      const muted = cssVar('--fg-muted');
+      ctx.clearRect(0, 0, w, h);
+      if (key === 'gpu' && !gpuLive) {
+        ctx.fillStyle = muted;
+        ctx.font = '11px Share Tech Mono, monospace';
+        ctx.fillText('GPU N/A (no NVML)', 8, h / 2 + 4);
+        return;
+      }
+      if (key === 'fps' && !fpsLive) {
+        ctx.fillStyle = muted;
+        ctx.font = '10px Share Tech Mono, monospace';
+        ctx.fillText('FPS: Enable hook or run RTSS', 6, h / 2 + 4);
+        return;
+      }
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = muted;
+      for (let i = 1; i < 4; i++) {
+        const y = (h / 4) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      const step = w / Math.max(1, data.length - 1);
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = i * step;
+        const y = h - (Math.min(maxY, Math.max(0, v)) / maxY) * h;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = i * step;
+        const y = h - (Math.min(maxY, Math.max(0, v)) / maxY) * h;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = stroke; ctx.lineWidth = 1.5;
+      ctx.shadowColor = stroke; ctx.shadowBlur = 6; ctx.stroke(); ctx.shadowBlur = 0;
+    }
+
+    async function enableFpsCapture() {
+      const btn = document.getElementById('btn-fps-hook');
+      if (btn) btn.disabled = true;
+      try {
+        logLine('info', '[FPS] Starting PresentMon for real FNV frame times (accept UAC once)…');
+        logLine('info', '[FPS] Keep FNV open and unpaused. Windowed mode still presents in the background.');
+        const res = await fetch('/api/fps/capture/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ elevate: true }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          logLine('info', '[FPS] ' + (data.note || 'Capture started'));
+          const stop = document.getElementById('btn-fps-stop');
+          if (stop) stop.disabled = false;
+        } else {
+          logLine('warn', '[FPS] ' + (data.note || data.error || 'Failed to start capture'));
+        }
+      } catch (e) {
+        logLine('err', '[FPS] ' + e);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function stopFpsCapture() {
+      try {
+        const res = await fetch('/api/fps/capture/stop', { method: 'POST' });
+        const data = await res.json();
+        logLine('info', '[FPS] ' + (data.note || 'Capture stopped'));
+      } catch (e) {
+        logLine('err', '[FPS] ' + e);
+      }
+      const stop = document.getElementById('btn-fps-stop');
+      if (stop) stop.disabled = true;
+      fpsLive = false;
+      document.getElementById('card-fps')?.classList.add('na');
+    }
+
+    function setDot(id, mode) {
+      const el = document.getElementById(id);
+      el.className = 'dot' + (mode === 'ok' ? '' : mode === 'warn' ? ' warn' : ' off');
+    }
+
+    function logLine(cls, text) {
+      const box = document.getElementById('chat-log');
+      const div = document.createElement('div');
+      div.className = cls;
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function boot() {
+      try {
+        const res = await fetch('/api/boot');
+        const data = await res.json();
+        document.getElementById('boot-hint').textContent = 'online // 127.0.0.1:8765';
+        if (data.theme) setTheme(data.theme);
+        if (data.config) {
+          document.getElementById('mods-path').value = data.config.mods_path || '';
+          document.getElementById('plugins-txt').value = data.config.plugins_txt || '';
+        }
+        renderDocs(data.docs);
+        renderMods(data.mods);
+        // Multi-game mod tabs (FO3 / FNV / FO4 / …)
+        await loadModsAll(false);
+        const ol = data.ollama || {};
+        const chosen = (data.config && data.config.ollama_model) || (data.llm && data.llm.ollama_model) || '';
+        if (data.llm) llmState = data.llm;
+        if (ol.ok) {
+          setDot('dot-ollama', 'ok');
+          document.getElementById('st-ollama').className = 'ok';
+          document.getElementById('st-ollama').textContent = 'ONLINE // ' + (chosen || (ol.models || [])[0] || 'local');
+          document.getElementById('llm-label').textContent = 'LLM: ' + (chosen || (ol.models || [])[0] || 'local');
+        } else {
+          setDot('dot-ollama', 'warn');
+          document.getElementById('st-ollama').className = 'warn';
+          document.getElementById('st-ollama').textContent = 'OFFLINE // start ollama';
+          document.getElementById('llm-label').textContent = 'LLM: offline';
+        }
+        if (data.config && data.config.system_prompt_custom) {
+          document.getElementById('llm-label').textContent += ' · custom prompt';
+        }
+        logLine('sys', '**Overseer Online.**');
+        logLine('info', `[INFO] Knowledge: ${data.docs.files || 0} files, ${data.docs.chunks || 0} chunks`);
+        if (data.mods && data.mods.ok) {
+          logLine('info', `[INFO] Mods: ${data.mods.count} plugins (${data.mods.source})`);
+          if (data.mods.missing_on_disk && data.mods.missing_on_disk.length) {
+            logLine('warn', `[WARN] ${data.mods.missing_on_disk.length} plugins listed but missing from Data path`);
+          }
+        } else {
+          logLine('warn', '[WARN] Mods not configured — click Auto-detect FNV or set paths.');
+        }
+        if (data.detected) {
+          if (data.detected.plugins_txt) logLine('info', '[INFO] Found plugins.txt: ' + data.detected.plugins_txt);
+          if (data.detected.vortex_root) logLine('info', '[INFO] Vortex folder seen: ' + data.detected.vortex_root);
+          if (data.detected.game_path) logLine('info', '[INFO] Game path: ' + data.detected.game_path);
+        }
+        applyNvseStatus(data.nvse || (data.detected && data.detected.nvse), data.launch);
+        applyVortexStatus(data.vortex);
+        // Multi-game catalog scan (Steam libraries + script extenders)
+        await scanFalloutGames(false);
+        if (data.vortex) {
+          if (data.vortex.running) logLine('info', '[INFO] Vortex ONLINE (process live)');
+          else if (data.vortex.installed) logLine('info', '[INFO] Vortex installed — not running');
+          else logLine('warn', '[WARN] Vortex not detected on this PC');
+        }
+        if (!ol.ok) {
+          logLine('warn', '[WARN] Ollama down — chat uses offline knowledge snippets.');
+        }
+        logLine('sys', 'Courier — pick a Fallout title (▾), launch, scan load order, or ask a question.');
+        logLine('info', '[INFO] FPS via RTSS/Afterburner for any running Fallout game.');
+        updateStability(data);
+      } catch (e) {
+        document.getElementById('boot-hint').textContent = 'boot failed';
+        logLine('err', '[ERR] ' + e);
+      }
+    }
+
+    function renderDocs(docs) {
+      const el = document.getElementById('docs-list');
+      const files = (docs && docs.file_list) || [];
+      if (!files.length) {
+        el.innerHTML = '<div class="empty">No docs found in knowledge/</div>';
+        setDot('dot-docs', 'warn');
+        document.getElementById('st-docs').textContent = 'EMPTY';
+        document.getElementById('st-docs').className = 'warn';
+        document.getElementById('b-docs').textContent = '0';
+        return;
+      }
+      el.innerHTML = files.map((f) =>
+        `<div class="item">${f.name} <span style="color:var(--fg-muted)">(${f.chunks || 0} ch)</span></div>`
+      ).join('');
+      setDot('dot-docs', 'ok');
+      document.getElementById('st-docs').className = 'ok';
+      document.getElementById('st-docs').textContent = `${docs.files} FILES // ${docs.chunks} CHUNKS`;
+      document.getElementById('b-docs').textContent = String(docs.chunks);
+    }
+
+    /** @type {{ games?: any[], selected_game_id?: string, total_plugins?: number } | null} */
+    let modsAllState = null;
+    let modsActiveGameId = '';
+
+    function renderMods(mods) {
+      const el = document.getElementById('mods-list');
+      const meta = document.getElementById('mod-meta');
+      const plugins = (mods && mods.plugins) || [];
+      document.getElementById('b-mods').textContent = String(plugins.length);
+      if (!mods || !mods.ok) {
+        el.innerHTML = `<div class="empty">${(mods && mods.error) || 'Not scanned yet.'}</div>`;
+        setDot('dot-mods', 'off');
+        document.getElementById('st-mods').className = 'warn';
+        document.getElementById('st-mods').textContent = 'NOT SET';
+        if (meta) meta.textContent = (mods && mods.error) || 'Not scanned';
+        return;
+      }
+      if (!plugins.length) {
+        const note = mods.note || mods.source === 'n/a'
+          ? (mods.note || 'This title has no ESP/ESM load order.')
+          : 'No plugins found at that path.';
+        el.innerHTML = `<div class="empty">${note}</div>`;
+        setDot('dot-mods', 'warn');
+        document.getElementById('st-mods').className = 'warn';
+        document.getElementById('st-mods').textContent = '0 PLUGINS';
+        if (meta) {
+          meta.textContent = [
+            mods.title || mods.short || 'Game',
+            mods.source || '',
+            mods.plugins_txt ? ('LO: ' + mods.plugins_txt) : '',
+            mods.mods_path ? ('Data: ' + mods.mods_path) : '',
+          ].filter(Boolean).join(' · ');
+        }
+        return;
+      }
+      el.innerHTML = plugins.slice(0, 250).map((p) => {
+        const miss = p.exists === false;
+        const masters = (p.missing_masters && p.missing_masters.length)
+          ? `  !MASTERS:${p.missing_masters.length}` : '';
+        return `<div class="item${miss ? ' miss' : ''}">${String(p.index).padStart(2, '0')} ${p.enabled === false ? '[ ] ' : ''}${p.name}${miss ? '  !MISSING' : ''}${masters}</div>`;
+      }).join('') + (plugins.length > 250 ? `<div class="empty">… +${plugins.length - 250} more</div>` : '');
+      setDot('dot-mods', 'ok');
+      document.getElementById('st-mods').className = 'ok';
+      document.getElementById('st-mods').textContent = `${plugins.length} // ${mods.source || 'scan'}`;
+      if (meta) {
+        meta.textContent = [
+          mods.title || mods.short || 'Game',
+          plugins.length + ' plugins',
+          (mods.enabled_count != null ? mods.enabled_count + ' enabled' : ''),
+          mods.source || '',
+          mods.plugins_txt ? PathBase(mods.plugins_txt) : '',
+        ].filter(Boolean).join(' · ');
+      }
+    }
+
+    function PathBase(p) {
+      if (!p) return '';
+      const s = String(p).replace(/\\/g, '/');
+      const parts = s.split('/');
+      return parts.slice(-2).join('/') || s;
+    }
+
+    function renderModTabs(all) {
+      const tabs = document.getElementById('mod-tabs');
+      if (!tabs) return;
+      const games = (all && all.games) || [];
+      if (!games.length) {
+        tabs.innerHTML = '<button type="button" disabled>No games scanned</button>';
+        return;
+      }
+      // Prefer installed plugin-capable games first
+      const ordered = games.slice().sort((a, b) => {
+        const ai = a.installed ? 0 : 1;
+        const bi = b.installed ? 0 : 1;
+        if (ai !== bi) return ai - bi;
+        return String(a.short || a.id).localeCompare(String(b.short || b.id));
+      });
+      tabs.innerHTML = ordered.map((g) => {
+        const active = g.id === modsActiveGameId ? ' active' : '';
+        const disabled = !g.installed ? ' disabled' : '';
+        const count = g.supports_plugins === false ? '—' : String(g.count || 0);
+        return `<button type="button" class="${active.trim()}" data-game-id="${g.id}"${disabled} title="${(g.path || g.title || '').replace(/"/g, '&quot;')}">${g.short || g.id}<span class="tab-count">${count}</span></button>`;
+      }).join('');
+      tabs.querySelectorAll('button[data-game-id]').forEach((btn) => {
+        btn.addEventListener('click', () => selectModGameTab(btn.getAttribute('data-game-id')));
+      });
+    }
+
+    function selectModGameTab(gameId) {
+      if (!gameId || !modsAllState || !modsAllState.games) return;
+      modsActiveGameId = gameId;
+      const g = modsAllState.games.find((x) => x.id === gameId);
+      renderModTabs(modsAllState);
+      if (g) {
+        renderMods({
+          ok: g.ok || g.supports_plugins === false,
+          error: g.error,
+          plugins: g.plugins || [],
+          source: g.source,
+          count: g.count,
+          enabled_count: g.enabled_count,
+          title: g.title,
+          short: g.short,
+          plugins_txt: g.plugins_txt,
+          mods_path: g.mods_path,
+          note: g.note,
+        });
+        // Keep path bar in sync when switching tabs
+        if (g.mods_path) {
+          const mp = document.getElementById('mods-path');
+          if (mp) mp.value = g.mods_path;
+        }
+        if (g.plugins_txt) {
+          const pt = document.getElementById('plugins-txt');
+          if (pt) pt.value = g.plugins_txt;
+        }
+      }
+    }
+
+    async function loadModsAll(force) {
+      try {
+        const url = force ? '/api/mods/all?force=1' : '/api/mods/all';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.ok && !data.games) {
+          logLine('warn', '[MODS] Multi-game scan failed: ' + (data.error || 'unknown'));
+          return null;
+        }
+        modsAllState = data;
+        const preferred = data.selected_game_id
+          || (typeof selectedGameId !== 'undefined' ? selectedGameId : '')
+          || 'fallout_nv';
+        const installed = (data.games || []).filter((g) => g.installed);
+        const pick = (data.games || []).find((g) => g.id === preferred && g.installed)
+          || installed.find((g) => (g.count || 0) > 0)
+          || installed[0]
+          || (data.games || [])[0];
+        modsActiveGameId = (pick && pick.id) || preferred;
+        renderModTabs(data);
+        selectModGameTab(modsActiveGameId);
+        const total = data.total_plugins != null ? data.total_plugins : installed.reduce((n, g) => n + (g.count || 0), 0);
+        document.getElementById('b-mods').textContent = String(total);
+        if (force) {
+          logLine('sys', `[MODS] Scanned ${installed.length} installed title(s), ${total} total plugins.`);
+          installed.forEach((g) => {
+            if (g.supports_plugins === false) return;
+            logLine('info', `[MODS] ${g.short || g.id}: ${g.count || 0} (${g.source || '—'})`);
+          });
+        }
+        return data;
+      } catch (e) {
+        logLine('err', '[MODS] ' + e);
+        return null;
+      }
+    }
+
+    function updateStability(bootData) {
+      let s = 35;
+      if (bootData.docs && bootData.docs.chunks > 0) s += 20;
+      if (bootData.mods && bootData.mods.ok && bootData.mods.count > 0) s += 20;
+      if (bootData.ollama && bootData.ollama.ok) s += 10;
+      if (bootData.nvse && bootData.nvse.present) s += 10;
+      if (bootData.vortex && (bootData.vortex.installed || bootData.vortex.running)) s += 5;
+      document.getElementById('stability').textContent = 'Stability Score: ' + Math.min(100, s) + '/100';
+    }
+
+    function applyNvseStatus(nvse, launch) {
+      // Generic "script extender" status (NVSE / FOSE / F4SE / sfall)
+      const present = nvse && (nvse.present || nvse.script_extender_present);
+      const g = getSelectedGame();
+      const short = (g && g.short) || 'GAME';
+      if (present) {
+        setDot('dot-nvse', 'ok');
+        document.getElementById('st-nvse').className = 'ok';
+        const label = (nvse && nvse.label) || (g && g.script_extenders && g.script_extenders[0] && g.script_extenders[0].label) || 'extender';
+        document.getElementById('st-nvse').textContent = 'READY // ' + label;
+        document.getElementById('b-launch').textContent = (launch && launch.name) || 'loader';
+      } else if (launch && launch.ok) {
+        setDot('dot-nvse', 'warn');
+        document.getElementById('st-nvse').className = 'warn';
+        document.getElementById('st-nvse').textContent = 'NONE // vanilla';
+        document.getElementById('b-launch').textContent = launch.name || 'vanilla';
+      } else {
+        setDot('dot-nvse', 'off');
+        document.getElementById('st-nvse').className = 'bad';
+        document.getElementById('st-nvse').textContent = g && g.installed ? 'NO EXE' : 'NOT INSTALLED';
+        document.getElementById('b-launch').textContent = '—';
+      }
+      updateLaunchButton();
+    }
+
+    function getSelectedGame() {
+      return falloutGames.find((g) => g.id === selectedGameId) || null;
+    }
+
+    function updateLaunchButton() {
+      const btn = document.getElementById('btn-launch');
+      const caret = document.getElementById('btn-launch-caret');
+      if (!btn || launchBusy) return;
+      const g = getSelectedGame();
+      if (!g) {
+        btn.disabled = true;
+        btn.textContent = '▶ Launch';
+        btn.title = 'Scan for Fallout games first';
+        if (caret) caret.disabled = false;
+        return;
+      }
+      const launch = g.launch || {};
+      const ready = !!(g.installed && launch.ok);
+      const se = !!g.script_extender_present;
+      const via = !!(launch.via_extender);
+      btn.disabled = !ready || !!g.running;
+      let label = '▶ Launch ' + (g.short || g.title || 'Game');
+      if (via) label += ' (SE)';
+      if (g.running) label = '● ' + (g.short || g.title) + ' LIVE';
+      btn.textContent = label;
+      btn.title = g.running
+        ? (g.title + ' is already running')
+        : ready
+          ? ('Launch ' + g.title + ' via ' + (launch.name || 'exe') + (g.path ? '\n' + g.path : ''))
+          : (g.installed ? 'No launchable exe found' : g.title + ' not installed');
+      if (caret) caret.disabled = false;
+    }
+
+    function renderLaunchMenu() {
+      const menu = document.getElementById('launch-menu');
+      if (!menu) return;
+      const installed = falloutGames.filter((g) => g.installed);
+      const missing = falloutGames.filter((g) => !g.installed && !g.optional);
+      const optionalMissing = falloutGames.filter((g) => !g.installed && g.optional);
+      let html = '<div class="lm-head">Installed (' + installed.length + ')</div>';
+      if (!installed.length) {
+        html += '<button type="button" class="lm-item" disabled><span class="lm-title">None detected</span><span class="lm-meta">Click Games to re-scan Steam libraries</span></button>';
+      }
+      installed.forEach((g) => {
+        const launch = g.launch || {};
+        const seBits = (g.script_extenders || []).filter((s) => s.present).map((s) => s.label).join(', ');
+        const meta = [
+          launch.name || 'no exe',
+          seBits ? ('SE: ' + seBits) : 'vanilla',
+          g.running ? ('pid ' + (g.pid || '?')) : '',
+        ].filter(Boolean).join(' · ');
+        html += '<button type="button" class="lm-item'
+          + (g.id === selectedGameId ? ' selected' : '')
+          + (g.running ? ' running' : '')
+          + '" data-game-id="' + g.id + '"'
+          + (launch.ok ? '' : ' disabled')
+          + ' title="' + (g.path || '').replace(/"/g, '&quot;') + '">'
+          + '<span class="lm-title">' + (g.title || g.id) + '</span>'
+          + '<span class="lm-meta">' + meta + '</span>'
+          + '</button>';
+      });
+      if (missing.length) {
+        html += '<div class="lm-sep"></div><div class="lm-head">Not installed</div>';
+        missing.forEach((g) => {
+          html += '<button type="button" class="lm-item" disabled>'
+            + '<span class="lm-title">' + g.title + '</span>'
+            + '<span class="lm-meta">not found on this PC</span></button>';
+        });
+      }
+      if (optionalMissing.length) {
+        html += '<div class="lm-sep"></div><div class="lm-head">Optional</div>';
+        optionalMissing.forEach((g) => {
+          html += '<button type="button" class="lm-item" disabled>'
+            + '<span class="lm-title">' + g.title + '</span>'
+            + '<span class="lm-meta">optional / not found</span></button>';
+        });
+      }
+      menu.innerHTML = html;
+      menu.querySelectorAll('.lm-item[data-game-id]').forEach((el) => {
+        el.addEventListener('click', () => selectFalloutGame(el.getAttribute('data-game-id')));
+      });
+    }
+
+    function toggleLaunchMenu(ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      launchMenuOpen = !launchMenuOpen;
+      const menu = document.getElementById('launch-menu');
+      const caret = document.getElementById('btn-launch-caret');
+      if (menu) menu.classList.toggle('open', launchMenuOpen);
+      if (caret) caret.setAttribute('aria-expanded', launchMenuOpen ? 'true' : 'false');
+      if (launchMenuOpen) renderLaunchMenu();
+    }
+
+    function closeLaunchMenu() {
+      launchMenuOpen = false;
+      const menu = document.getElementById('launch-menu');
+      const caret = document.getElementById('btn-launch-caret');
+      if (menu) menu.classList.remove('open');
+      if (caret) caret.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (e) => {
+      const split = document.getElementById('launch-split');
+      if (launchMenuOpen && split && !split.contains(e.target)) closeLaunchMenu();
+    });
+
+    async function selectFalloutGame(gameId, { launchAfter = false } = {}) {
+      if (!gameId) return;
+      selectedGameId = gameId;
+      closeLaunchMenu();
+      updateLaunchButton();
+      renderLaunchMenu();
+      try {
+        const res = await fetch('/api/games/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ game_id: gameId }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          const g = getSelectedGame();
+          logLine('info', '[GAMES] Selected ' + ((g && g.title) || gameId));
+          if (data.config) {
+            if (data.config.mods_path != null) document.getElementById('mods-path').value = data.config.mods_path || '';
+            if (data.config.plugins_txt != null) document.getElementById('plugins-txt').value = data.config.plugins_txt || '';
+          }
+          const se = g && (g.script_extenders || []).some((s) => s.present);
+          applyNvseStatus(
+            { present: se, script_extender_present: se },
+            g && g.launch
+          );
+        } else {
+          logLine('warn', '[GAMES] Select failed: ' + (data.error || 'unknown'));
+        }
+      } catch (e) {
+        logLine('warn', '[GAMES] Select error: ' + e);
+      }
+      if (launchAfter) launchGame();
+    }
+
+    async function scanFalloutGames(force) {
+      try {
+        const url = force ? '/api/games/scan' : '/api/games';
+        const res = await fetch(url, { method: force ? 'POST' : 'GET' });
+        const data = await res.json();
+        if (!data.ok && !data.games) {
+          logLine('err', '[GAMES] Scan failed: ' + (data.error || 'unknown'));
+          return data;
+        }
+        falloutGames = data.games || [];
+        if (data.selected_game_id) selectedGameId = data.selected_game_id;
+        // Prefer a running game as selection for FPS context
+        const live = (data.running || [])[0];
+        if (live && live.id) selectedGameId = live.id;
+        else if (!falloutGames.find((g) => g.id === selectedGameId)) {
+          const first = falloutGames.find((g) => g.installed && g.launch && g.launch.ok);
+          if (first) selectedGameId = first.id;
+        }
+        updateLaunchButton();
+        renderLaunchMenu();
+        const g = getSelectedGame();
+        const se = g && (g.script_extenders || []).some((s) => s.present);
+        applyNvseStatus({ present: !!se, script_extender_present: !!se }, g && g.launch);
+        const n = data.installed_count != null ? data.installed_count : falloutGames.filter((x) => x.installed).length;
+        const el = document.getElementById('b-games-count');
+        if (el) el.textContent = String(n);
+        if (force) {
+          logLine('sys', '[GAMES] Scanned ' + n + ' installed Fallout title(s).');
+          falloutGames.filter((x) => x.installed).forEach((x) => {
+            const seL = (x.script_extenders || []).filter((s) => s.present).map((s) => s.label).join('/') || 'vanilla';
+            logLine('info', '[GAMES] ' + x.title + ' → ' + (x.launch && x.launch.name || '?') + ' (' + seL + ')');
+          });
+        }
+        return data;
+      } catch (e) {
+        logLine('err', '[GAMES] ' + e);
+        return null;
+      }
+    }
+
+    function applyVortexStatus(vx) {
+      if (!vx) {
+        setDot('dot-vortex', 'off');
+        document.getElementById('st-vortex').className = 'warn';
+        document.getElementById('st-vortex').textContent = '—';
+        document.getElementById('b-vortex').textContent = '—';
+        return;
+      }
+      if (vx.running) {
+        setDot('dot-vortex', 'ok');
+        document.getElementById('st-vortex').className = 'ok';
+        document.getElementById('st-vortex').textContent = 'ONLINE // ' + (vx.name || 'Vortex');
+        document.getElementById('b-vortex').textContent = 'ONLINE';
+      } else if (vx.installed) {
+        setDot('dot-vortex', 'warn');
+        document.getElementById('st-vortex').className = 'warn';
+        document.getElementById('st-vortex').textContent = 'INSTALLED // offline';
+        document.getElementById('b-vortex').textContent = 'offline';
+      } else {
+        setDot('dot-vortex', 'off');
+        document.getElementById('st-vortex').className = 'bad';
+        document.getElementById('st-vortex').textContent = 'NOT DETECTED';
+        document.getElementById('b-vortex').textContent = 'none';
+      }
+    }
+
+    function applyLlmHeader(llm) {
+      if (!llm) return;
+      llmState = { ...(llmState || {}), ...llm };
+      const model = llm.ollama_model || (llmState && llmState.ollama_model) || '—';
+      // Only force OFFLINE when we have an explicit ollama.ok === false probe result.
+      // Missing probe (fast save) must not wipe a known-online status.
+      const probed = llm.ollama && typeof llm.ollama.ok === 'boolean';
+      const online = probed ? !!llm.ollama.ok : null;
+      if (online === true) {
+        setDot('dot-ollama', 'ok');
+        document.getElementById('st-ollama').className = 'ok';
+        document.getElementById('st-ollama').textContent = 'ONLINE // ' + model;
+        let label = 'LLM: ' + model;
+        if (llm.system_prompt_custom) label += ' · custom prompt';
+        document.getElementById('llm-label').textContent = label;
+      } else if (online === false) {
+        setDot('dot-ollama', 'warn');
+        document.getElementById('st-ollama').className = 'warn';
+        const err = (llm.ollama && llm.ollama.error) ? String(llm.ollama.error).slice(0, 48) : '';
+        document.getElementById('st-ollama').textContent =
+          'OFFLINE' + (err ? ' // ' + err : ' // start ollama / check URL');
+        document.getElementById('llm-label').textContent = 'LLM: offline · want ' + model;
+      } else {
+        // Saved model, probe not included — show model as selected, keep prior online/offline if any
+        document.getElementById('llm-label').textContent = 'LLM: ' + model;
+        const st = document.getElementById('st-ollama');
+        if (!st.textContent || st.textContent === '—' || st.textContent.indexOf('SAVED') === 0) {
+          setDot('dot-ollama', 'ok');
+          st.className = 'ok';
+          st.textContent = 'SAVED // ' + model;
+        } else if (st.className === 'ok') {
+          st.textContent = 'ONLINE // ' + model;
+        }
+      }
+    }
+
+    async function refreshOllamaStatus() {
+      try {
+        const r = await fetch('/api/status');
+        if (!r.ok) return;
+        const data = await r.json();
+        const ol = data.ollama || {};
+        const model =
+          (data.config && data.config.ollama_model) ||
+          (llmState && llmState.ollama_model) ||
+          '—';
+        applyLlmHeader({
+          ollama_model: model,
+          ollama: ol,
+          ollama_url: ol.url,
+        });
+      } catch (_) { /* ignore */ }
+    }
+
+    function normalizeModelList(models) {
+      const out = [];
+      const seen = new Set();
+      (models || []).forEach((m) => {
+        const name = (m == null ? '' : String(m)).trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(name);
+      });
+      return out;
+    }
+
+    function setSelectedModel(name) {
+      const n = (name || '').trim();
+      const sel = document.getElementById('llm-model');
+      const manual = document.getElementById('llm-model-manual');
+      if (manual) manual.value = n;
+      if (sel) {
+        // ensure option exists
+        let found = false;
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === n) { found = true; break; }
+        }
+        if (n && !found) {
+          const opt = document.createElement('option');
+          opt.value = n;
+          opt.textContent = n;
+          sel.appendChild(opt);
+        }
+        if (n) sel.value = n;
+      }
+      // chip highlight
+      document.querySelectorAll('#llm-model-chips button').forEach((b) => {
+        b.classList.toggle('picked', b.dataset.model === n);
+      });
+    }
+
+    function getSelectedModel() {
+      const manEl = document.getElementById('llm-model-manual');
+      const manual = manEl ? (manEl.value || '').trim() : '';
+      if (manual) return manual;
+      const sel = document.getElementById('llm-model');
+      return sel ? (sel.value || '').trim() : '';
+    }
+
+    function fillModelSelect(models, selected) {
+      const sel = document.getElementById('llm-model');
+      const chips = document.getElementById('llm-model-chips');
+      const dlist = document.getElementById('llm-model-list');
+      const list = normalizeModelList(models);
+      const prefer = (selected || '').trim();
+
+      sel.innerHTML = '';
+      dlist.innerHTML = '';
+      chips.innerHTML = '';
+
+      if (!list.length) {
+        const opt = document.createElement('option');
+        opt.value = prefer || '';
+        opt.textContent = prefer || '(no models — click Refresh / check Ollama)';
+        sel.appendChild(opt);
+        chips.innerHTML = '<span class="empty">No models returned. Is Ollama running? Try Refresh.</span>';
+        if (prefer) setSelectedModel(prefer);
+        return;
+      }
+
+      // Prefer exact match; else match bare name (mistral vs mistral:latest)
+      let pick = prefer;
+      if (pick && !list.includes(pick)) {
+        const bare = pick.split(':')[0].toLowerCase();
+        const hit = list.find((m) => m === pick || m.toLowerCase().startsWith(bare + ':') || m.toLowerCase() === bare);
+        if (hit) pick = hit;
+      }
+      if (!pick || (!list.includes(pick) && !list.some((m) => m.toLowerCase() === pick.toLowerCase()))) {
+        // skip embed-only default if possible
+        const chatFirst = list.find((m) => !/embed|nomic/i.test(m)) || list[0];
+        pick = list.includes(prefer) ? prefer : chatFirst;
+      }
+
+      list.forEach((m) => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        sel.appendChild(opt);
+        const de = document.createElement('option');
+        de.value = m;
+        dlist.appendChild(de);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.model = m;
+        btn.textContent = m;
+        btn.onclick = () => setSelectedModel(m);
+        chips.appendChild(btn);
+      });
+
+      setSelectedModel(pick);
+    }
+
+    function updateLlmPromptMeta(llm) {
+      const el = document.getElementById('llm-prompt-meta');
+      if (!el) return;
+      if (llm && llm.system_prompt_custom) {
+        el.textContent = 'System prompt: custom (saved with your settings)';
+      } else {
+        el.textContent = 'System prompt: built-in default (Overseer protocol)';
+      }
+    }
+
+    async function refreshLlmModal() {
+      const statusEl = document.getElementById('llm-status');
+      const warnEl = document.getElementById('llm-warn');
+      const btnRefresh = document.getElementById('btn-llm-refresh');
+      statusEl.className = 'status warn';
+      statusEl.textContent = 'Checking Ollama…';
+      warnEl.textContent = '';
+      if (btnRefresh) btnRefresh.disabled = true;
+      const chips = document.getElementById('llm-model-chips');
+      if (chips) chips.innerHTML = '<span class="empty">Loading models…</span>';
+
+      try {
+        const url = document.getElementById('llm-url').value.trim() || 'http://127.0.0.1:11434';
+        const prevModel = getSelectedModel();
+        let llm = {};
+        let models = [];
+        let softNotes = [];
+
+        // Single primary path — keep it fast and predictable
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 5000);
+          const r = await fetch('/api/llm?probe=1&url=' + encodeURIComponent(url), { signal: ctrl.signal });
+          clearTimeout(t);
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const data = await r.json();
+          const block = data.llm || data;
+          models = normalizeModelList(block.models || (block.ollama && block.ollama.models) || []);
+          llm = Object.assign({}, block, { models });
+        } catch (e1) {
+          softNotes.push(String(e1 && e1.message ? e1.message : e1));
+          // Fallback: models endpoint
+          try {
+            const r = await fetch('/api/llm/models?url=' + encodeURIComponent(url));
+            if (r.ok) {
+              const data = await r.json();
+              models = normalizeModelList(data.models || []);
+              llm = {
+                ollama: data.ollama || { ok: models.length > 0, models },
+                ollama_url: data.ollama_url || url,
+                ollama_model: data.ollama_model,
+                models,
+              };
+            }
+          } catch (e2) {
+            softNotes.push(String(e2 && e2.message ? e2.message : e2));
+          }
+        }
+
+        // Hide embed-only models from the main picker (still usable if already selected)
+        const chatModels = models.filter((m) => !/embed|nomic-embed/i.test(m));
+        const displayModels = chatModels.length ? chatModels : models;
+
+        llmState = llm;
+        const ol = llm.ollama || {};
+        document.getElementById('llm-url').value = llm.ollama_url || url;
+        const prefer = prevModel || llm.ollama_model || '';
+        fillModelSelect(displayModels, prefer);
+        updateLlmPromptMeta(llm);
+
+        if (ol.ok || displayModels.length) {
+          const n = displayModels.length;
+          statusEl.className = 'status ok';
+          statusEl.textContent = n
+            ? `Ollama online — ${n} chat model(s). Click one, then Save.`
+            : 'Ollama online — no chat models. Run: ollama pull mistral';
+          warnEl.textContent = n ? '' : 'Pull a chat model in a terminal, then Refresh.';
+        } else {
+          statusEl.className = 'status warn';
+          statusEl.textContent = 'Ollama offline or OVERSEER needs a restart.' +
+            (ol.error ? ' (' + ol.error + ')' : '');
+          fillModelSelect([], prefer);
+          const joined = softNotes.join(' · ');
+          if (/404/.test(joined)) {
+            warnEl.textContent =
+              'Old OVERSEER process. Close all consoles, run RUN_OVERSEER.bat, Ctrl+F5.';
+          } else if (/abort|Failed to fetch|NetworkError/i.test(joined)) {
+            warnEl.textContent =
+              'Cannot reach OVERSEER or Ollama. One console only; Ollama app running; URL http://127.0.0.1:11434';
+          } else if (joined) {
+            warnEl.textContent = joined;
+          } else {
+            warnEl.textContent = 'Could not list models. Is Ollama running?';
+          }
+        }
+      } catch (e) {
+        statusEl.className = 'status bad';
+        statusEl.textContent = 'Failed to query LLM status: ' + e;
+      } finally {
+        if (btnRefresh) btnRefresh.disabled = false;
+      }
+    }
+
+    async function openLlmModal() {
+      document.getElementById('modal-llm').classList.add('open');
+      const hidden = document.getElementById('llm-model-manual');
+      if (hidden) hidden.value = '';
+      // Prefill URL from last known config, then single refresh
+      if (llmState && llmState.ollama_url) {
+        document.getElementById('llm-url').value = llmState.ollama_url;
+      }
+      await refreshLlmModal();
+    }
+
+    function closeLlmModal() {
+      document.getElementById('modal-llm').classList.remove('open');
+    }
+
+    async function saveLlmModal() {
+      const ollama_url = document.getElementById('llm-url').value.trim() || 'http://127.0.0.1:11434';
+      const ollama_model = getSelectedModel();
+      const warn = document.getElementById('llm-warn');
+      if (!ollama_model) {
+        warn.textContent = 'Pick or type a model name first.';
+        return;
+      }
+      warn.textContent = 'Saving…';
+      // Save first without long probe; we re-check Ollama right after
+      const payload = { ollama_url, ollama_model, skip_probe: true };
+
+      async function postJson(path, body) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        try {
+          const res = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: ctrl.signal,
+          });
+          const ct = (res.headers.get('content-type') || '').toLowerCase();
+          const text = await res.text();
+          if (!ct.includes('application/json') || text.trimStart().startsWith('<')) {
+            throw new Error(
+              'Server returned HTML (old OVERSEER process?). Close all OVERSEER consoles and run RUN_OVERSEER.bat again.'
+            );
+          }
+          let data = {};
+          try { data = JSON.parse(text); } catch (_) {
+            throw new Error('Bad JSON from ' + path);
+          }
+          if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+          return data;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      try {
+        let data = null;
+        let via = 'llm';
+        try {
+          data = await postJson('/api/llm', payload);
+        } catch (e1) {
+          // Fallback: plain config write (always enough to persist model)
+          via = 'config';
+          try {
+            data = await postJson('/api/config', { ollama_url, ollama_model });
+          } catch (e2) {
+            const msg = String(e2 && e2.message ? e2.message : e2);
+            if (msg.indexOf('abort') !== -1 || msg.indexOf('AbortError') !== -1) {
+              throw new Error('Save timed out — OVERSEER may be busy or not running. Restart RUN_OVERSEER.bat.');
+            }
+            if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
+              throw new Error(
+                'Failed to reach OVERSEER (Failed to fetch). Close extra terminal windows, restart RUN_OVERSEER.bat, then try Save again.'
+              );
+            }
+            throw new Error(msg + ' (also failed /api/llm: ' + (e1 && e1.message ? e1.message : e1) + ')');
+          }
+        }
+
+        const model = (data.llm && data.llm.ollama_model) || (data.config && data.config.ollama_model) || ollama_model;
+        if (data.llm) {
+          applyLlmHeader({ ...data.llm, ollama_model: model });
+        } else {
+          applyLlmHeader({ ollama_model: model });
+        }
+        logLine('info', '[INFO] LLM set to ' + model + (via === 'config' ? ' (via config)' : ''));
+
+        // Re-probe Ollama so ONLINE/OFFLINE is real (not assumed from skip_probe save)
+        try {
+          const probe = await postJson('/api/llm', { probe_only: true, ollama_url });
+          const block = (probe && probe.llm) || probe || {};
+          applyLlmHeader({
+            ollama_model: model,
+            ollama_url: block.ollama_url || ollama_url,
+            ollama: block.ollama || { ok: false },
+            system_prompt_custom: block.system_prompt_custom,
+          });
+          if (block.ollama && block.ollama.ok) {
+            logLine('info', '[INFO] Ollama ONLINE at ' + (block.ollama_url || ollama_url));
+          } else {
+            const err = (block.ollama && block.ollama.error) || 'not reachable';
+            logLine('warn', '[WARN] Ollama not reachable at ' + ollama_url + ' — ' + err);
+            warn.textContent =
+              'Model saved, but Ollama looks offline at ' + ollama_url +
+              '. Keep the Ollama app running; URL must be http://127.0.0.1:11434';
+            // still close — model is saved
+          }
+        } catch (pe) {
+          logLine('warn', '[WARN] Could not re-check Ollama: ' + pe);
+          await refreshOllamaStatus();
+        }
+
+        warn.textContent = warn.textContent && warn.textContent.indexOf('offline') !== -1
+          ? warn.textContent
+          : '';
+        closeLlmModal();
+      } catch (e) {
+        const msg = String(e && e.message ? e.message : e);
+        logLine('err', '[ERR] Save LLM failed: ' + msg);
+        warn.textContent = 'Save failed: ' + msg;
+      }
+    }
+
+    // --- FNV console batch ---
+    let consolePresets = {};
+
+    async function openConsoleModal() {
+      document.getElementById('modal-console').classList.add('open');
+      const statusEl = document.getElementById('console-status');
+      const warnEl = document.getElementById('console-warn');
+      warnEl.textContent = '';
+      try {
+        const st = await (await fetch('/api/console')).json();
+        consolePresets = st.presets || {};
+        const box = document.getElementById('console-presets');
+        box.innerHTML = '';
+        Object.keys(consolePresets).forEach((label) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = label;
+          b.onclick = () => appendConsolePreset(label);
+          box.appendChild(b);
+        });
+        document.getElementById('console-name').value = st.batch_name || 'overseer';
+        document.getElementById('console-bat-hint').textContent = st.console_command || 'bat overseer';
+        if (st.ok) {
+          statusEl.className = 'status ok';
+          statusEl.textContent =
+            `Game path OK — batch → ${st.batch_path || '(pending)'} | ` +
+            (st.game_running ? 'FNV RUNNING' : 'FNV not running') +
+            ' | in-game: ' + (st.console_command || 'bat overseer');
+        } else {
+          statusEl.className = 'status warn';
+          statusEl.textContent = 'game_path missing — Auto-detect FNV first.';
+        }
+      } catch (e) {
+        statusEl.className = 'status bad';
+        statusEl.textContent = 'Console status failed: ' + e;
+      }
+    }
+
+    function closeConsoleModal() {
+      document.getElementById('modal-console').classList.remove('open');
+    }
+
+    function appendConsolePreset(label) {
+      const text = consolePresets[label];
+      if (!text) return;
+      const ta = document.getElementById('console-script');
+      const cur = ta.value.trim();
+      ta.value = cur ? (cur + '\n' + text) : text;
+    }
+
+    function clearConsoleScript() {
+      document.getElementById('console-script').value = '';
+    }
+
+    function copyConsoleBatCmd() {
+      const name = (document.getElementById('console-name').value || 'overseer').trim() || 'overseer';
+      const cmd = 'bat ' + name.replace(/[^\w\-]+/g, '_');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cmd).then(() => {
+          document.getElementById('console-warn').textContent = 'Copied: ' + cmd;
+        }).catch(() => {
+          document.getElementById('console-warn').textContent = 'Copy failed — type: ' + cmd;
+        });
+      } else {
+        document.getElementById('console-warn').textContent = 'Type in-game: ' + cmd;
+      }
+    }
+
+    async function writeConsoleBatch() {
+      const commands = document.getElementById('console-script').value;
+      const name = (document.getElementById('console-name').value || 'overseer').trim();
+      const warnEl = document.getElementById('console-warn');
+      try {
+        const res = await fetch('/api/console/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commands, name }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          warnEl.textContent = '';
+          document.getElementById('console-bat-hint').textContent = data.console_command || ('bat ' + name);
+          document.getElementById('console-status').className = 'status ok';
+          document.getElementById('console-status').textContent =
+            `Wrote ${data.line_count} line(s) → ${data.path} | in-game: ${data.console_command}`;
+          logLine('sys', `[CONSOLE] ${data.message}`);
+          logLine('info', `[INFO] ${data.path}`);
+        } else {
+          warnEl.textContent = data.error || 'Write failed';
+          logLine('err', '[ERR] Console batch: ' + (data.error || 'failed'));
+        }
+      } catch (e) {
+        warnEl.textContent = String(e);
+        logLine('err', '[ERR] ' + e);
+      }
+    }
+
+    /** Cached default protocol text so Reset works offline of nested LLM state */
+    let cachedDefaultPrompt = '';
+    let promptBusy = false;
+
+    async function fetchSystemPromptState() {
+      // Prefer dedicated endpoint, then llm, then config
+      const tries = [
+        '/api/system_prompt',
+        '/api/llm/default_prompt',
+        '/api/llm',
+        '/api/config',
+      ];
+      let state = {
+        system_prompt: '',
+        default_system_prompt: cachedDefaultPrompt || '',
+        is_custom: false,
+        saved_custom: '',
+      };
+
+      for (const path of tries) {
+        try {
+          const res = await fetch(path);
+          if (!res.ok) continue;
+          const data = await res.json();
+
+          if (path === '/api/system_prompt') {
+            state.default_system_prompt = data.default_system_prompt || state.default_system_prompt;
+            state.system_prompt = data.system_prompt || state.default_system_prompt;
+            state.is_custom = !!data.is_custom;
+            state.saved_custom = data.saved_custom || '';
+            if (state.default_system_prompt) cachedDefaultPrompt = state.default_system_prompt;
+            return { ok: true, state, source: path };
+          }
+          if (path === '/api/llm/default_prompt') {
+            state.default_system_prompt = data.default_system_prompt || '';
+            if (state.default_system_prompt) cachedDefaultPrompt = state.default_system_prompt;
+            if (!state.system_prompt) state.system_prompt = state.default_system_prompt;
+            // keep looping for active custom if possible
+            continue;
+          }
+          if (path === '/api/llm') {
+            state.default_system_prompt = data.default_system_prompt || state.default_system_prompt;
+            state.system_prompt = data.system_prompt || state.system_prompt || state.default_system_prompt;
+            state.is_custom = !!(data.system_prompt_custom);
+            state.saved_custom = data.saved_custom || '';
+            if (state.default_system_prompt) cachedDefaultPrompt = state.default_system_prompt;
+            if (state.system_prompt) return { ok: true, state, source: path };
+          }
+          if (path === '/api/config') {
+            const meta = data.system_prompt_meta || {};
+            state.default_system_prompt = meta.default_system_prompt || state.default_system_prompt;
+            state.saved_custom = data.system_prompt || meta.saved_custom || '';
+            state.is_custom = !!(meta.is_custom);
+            state.system_prompt = meta.system_prompt || state.saved_custom || state.default_system_prompt;
+            if (state.default_system_prompt) cachedDefaultPrompt = state.default_system_prompt;
+            if (state.system_prompt || state.default_system_prompt) {
+              return { ok: true, state, source: path };
+            }
+          }
+        } catch (_) { /* try next */ }
+      }
+
+      if (cachedDefaultPrompt) {
+        state.default_system_prompt = cachedDefaultPrompt;
+        state.system_prompt = cachedDefaultPrompt;
+        return { ok: true, state, source: 'cache' };
+      }
+      return { ok: false, state, source: 'none' };
+    }
+
+    async function openPromptModal() {
+      const modal = document.getElementById('modal-prompt');
+      const editor = document.getElementById('prompt-editor');
+      const statusEl = document.getElementById('prompt-status');
+      const warnEl = document.getElementById('prompt-warn');
+      const metaEl = document.getElementById('prompt-meta-line');
+      warnEl.textContent = '';
+      statusEl.className = 'status warn';
+      statusEl.textContent = 'Loading system prompt…';
+      editor.value = '';
+      editor.placeholder = 'Loading…';
+      modal.classList.add('open');
+
+      const result = await fetchSystemPromptState();
+      const st = result.state || {};
+      let def = st.default_system_prompt || cachedDefaultPrompt || '';
+      let current = '';
+
+      if (st.is_custom && String(st.saved_custom || '').trim()) {
+        current = st.saved_custom;
+      } else if (String(st.system_prompt || '').trim()) {
+        current = st.system_prompt;
+      } else {
+        current = def;
+      }
+
+      // Sync llmState for other UI bits
+      llmState = Object.assign({}, llmState || {}, {
+        system_prompt: current,
+        default_system_prompt: def,
+        system_prompt_custom: !!st.is_custom,
+        saved_custom: st.saved_custom || '',
+      });
+      if (def) cachedDefaultPrompt = def;
+
+      editor.value = current || '';
+      editor.placeholder = 'System prompt…';
+      promptDraft = current || '';
+
+      if (result.ok && (current || def)) {
+        statusEl.className = 'status ok';
+        statusEl.textContent = st.is_custom
+          ? 'Loaded custom system prompt (saved in config).'
+          : 'Loaded built-in Overseer protocol.';
+        metaEl.textContent = st.is_custom
+          ? 'Status: CUSTOM · edits apply after Save'
+          : 'Status: DEFAULT · save a change to override';
+      } else {
+        statusEl.className = 'status bad';
+        statusEl.textContent = 'Could not load prompt API — restart OVERSEER (RUN_OVERSEER.bat), then Ctrl+F5.';
+        metaEl.textContent = 'Status: load failed';
+        warnEl.textContent = 'If the box is empty, restart the server so /api/system_prompt exists.';
+        // Still leave editor usable with a starter stub
+        if (!editor.value) {
+          editor.value =
+            'You are Overseer, a Fallout: New Vegas modding assistant.\n' +
+            'Prioritize stability, then performance, then features. Be precise and actionable.';
+        }
+      }
+      setTimeout(() => editor.focus(), 50);
+    }
+
+    function closePromptModal() {
+      document.getElementById('modal-prompt').classList.remove('open');
+      document.getElementById('prompt-warn').textContent = '';
+    }
+
+    async function resetPromptEditor() {
+      const warnEl = document.getElementById('prompt-warn');
+      const statusEl = document.getElementById('prompt-status');
+      let def = cachedDefaultPrompt || (llmState && llmState.default_system_prompt) || '';
+      if (!def) {
+        statusEl.className = 'status warn';
+        statusEl.textContent = 'Fetching default protocol…';
+        const result = await fetchSystemPromptState();
+        def = (result.state && result.state.default_system_prompt) || cachedDefaultPrompt || '';
+      }
+      if (!def) {
+        warnEl.textContent = 'Default protocol unavailable — restart OVERSEER and try again.';
+        return;
+      }
+      cachedDefaultPrompt = def;
+      document.getElementById('prompt-editor').value = def;
+      document.getElementById('prompt-meta-line').textContent = 'Status: showing DEFAULT (not saved until you click Save)';
+      statusEl.className = 'status ok';
+      statusEl.textContent = 'Editor reset to built-in default. Click Save prompt to apply.';
+      warnEl.textContent = '';
+    }
+
+    async function savePromptModal() {
+      if (promptBusy) return;
+      const text = document.getElementById('prompt-editor').value;
+      const warnEl = document.getElementById('prompt-warn');
+      const statusEl = document.getElementById('prompt-status');
+      const def = (cachedDefaultPrompt || (llmState && llmState.default_system_prompt) || '').trim();
+      const isReset = !text.trim() || (def && text.trim() === def);
+
+      promptBusy = true;
+      const saveBtn = document.getElementById('btn-prompt-save');
+      if (saveBtn) saveBtn.disabled = true;
+      statusEl.className = 'status warn';
+      statusEl.textContent = 'Saving…';
+      warnEl.textContent = '';
+
+      const payloads = isReset
+        ? [
+            { path: '/api/system_prompt', body: { reset: true } },
+            { path: '/api/llm', body: { reset_system_prompt: true } },
+            { path: '/api/config', body: { system_prompt: '', reset_system_prompt: true } },
+          ]
+        : [
+            { path: '/api/system_prompt', body: { system_prompt: text } },
+            { path: '/api/llm', body: { system_prompt: text } },
+            { path: '/api/config', body: { system_prompt: text } },
+          ];
+
+      let saved = false;
+      let lastErr = '';
+      for (const attempt of payloads) {
+        try {
+          const res = await fetch(attempt.path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(attempt.body),
+          });
+          if (!res.ok) {
+            lastErr = attempt.path + ' HTTP ' + res.status;
+            continue;
+          }
+          let data = {};
+          try { data = await res.json(); } catch (_) {}
+          saved = true;
+
+          const isCustom = data.is_custom != null
+            ? !!data.is_custom
+            : !!(data.llm && data.llm.system_prompt_custom);
+          const active = data.system_prompt
+            || (data.llm && data.llm.system_prompt)
+            || (isReset ? def : text);
+          const defaultP = data.default_system_prompt
+            || (data.llm && data.llm.default_system_prompt)
+            || def;
+
+          llmState = Object.assign({}, llmState || {}, {
+            system_prompt: active,
+            default_system_prompt: defaultP,
+            system_prompt_custom: isCustom,
+            saved_custom: isReset ? '' : text,
+          });
+          if (defaultP) cachedDefaultPrompt = defaultP;
+          updateLlmPromptMeta(llmState);
+          applyLlmHeader(Object.assign({}, llmState, {
+            ollama: (llmState && llmState.ollama) || { ok: true },
+            ollama_model: (llmState && llmState.ollama_model) || document.getElementById('llm-label').textContent.replace(/^LLM:\s*/, '').split('·')[0].trim(),
+          }));
+
+          statusEl.className = 'status ok';
+          statusEl.textContent = isReset
+            ? 'Saved — using built-in Overseer protocol.'
+            : 'Saved custom system prompt.';
+          document.getElementById('prompt-meta-line').textContent = isReset
+            ? 'Status: DEFAULT (active)'
+            : 'Status: CUSTOM (active)';
+          logLine('info', isReset
+            ? '[INFO] System prompt reset to built-in protocol'
+            : '[INFO] Custom system prompt saved');
+          break;
+        } catch (e) {
+          lastErr = String(e);
+        }
+      }
+
+      promptBusy = false;
+      if (saveBtn) saveBtn.disabled = false;
+
+      if (saved) {
+        setTimeout(() => closePromptModal(), 350);
+      } else {
+        statusEl.className = 'status bad';
+        statusEl.textContent = 'Save failed.';
+        warnEl.textContent = lastErr
+          ? (lastErr + ' — restart OVERSEER so prompt APIs load, then try again.')
+          : 'Restart OVERSEER (close black window, RUN_OVERSEER.bat), then Ctrl+F5.';
+        logLine('err', '[ERR] Save system prompt failed: ' + (lastErr || 'unknown'));
+      }
+    }
+
+    // Keep manual field in sync with dropdown
+    document.getElementById('llm-model').addEventListener('change', (e) => {
+      setSelectedModel(e.target.value);
+    });
+    document.getElementById('llm-model-manual').addEventListener('change', (e) => {
+      setSelectedModel(e.target.value);
+    });
+
+    // Close modals on backdrop click / Escape (don't close LLM under an open prompt)
+    document.getElementById('modal-llm').addEventListener('click', (e) => {
+      if (e.target.id !== 'modal-llm') return;
+      if (document.getElementById('modal-prompt').classList.contains('open')) return;
+      closeLlmModal();
+    });
+    document.getElementById('modal-prompt').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-prompt') closePromptModal();
+    });
+    document.getElementById('modal-console').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-console') closeConsoleModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (document.getElementById('modal-prompt').classList.contains('open')) closePromptModal();
+        else if (document.getElementById('modal-console').classList.contains('open')) closeConsoleModal();
+        else if (document.getElementById('modal-llm').classList.contains('open')) closeLlmModal();
+      }
+    });
+
+    async function launchGame() {
+      if (launchBusy) return;
+      const g = getSelectedGame();
+      if (!g || !g.installed) {
+        logLine('err', '[ERR] No installed Fallout title selected. Click Games to scan.');
+        return;
+      }
+      if (g.running) {
+        logLine('warn', '[WARN] ' + g.title + ' is already running.');
+        return;
+      }
+      launchBusy = true;
+      closeLaunchMenu();
+      const btn = document.getElementById('btn-launch');
+      const caret = document.getElementById('btn-launch-caret');
+      btn.disabled = true;
+      if (caret) caret.disabled = true;
+      const preferSe = !!(g.script_extender_present || (g.script_extenders || []).some((s) => s.loaders && s.loaders.length));
+      // Titles with optional SE: prefer when present; classics with only sfall always launch main exe
+      const needsLoader = (g.script_extenders || []).some((s) => (s.loaders || []).length);
+      const prefer_extender = needsLoader ? !!(g.script_extender_present) : false;
+      logLine('info', '[INFO] Launching ' + g.title + ' via ' + ((g.launch && g.launch.name) || 'exe') + '…');
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 20000);
+        const res = await fetch('/api/game/launch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            game_id: g.id,
+            prefer_extender: prefer_extender || preferSe,
+            prefer_nvse: g.id === 'fallout_nv' ? true : prefer_extender,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(t);
+        const data = await res.json();
+        if (data.ok) {
+          logLine('sys', `[LAUNCH] ${data.message || 'Started'}`);
+          if (data.via_extender || data.via_nvse) {
+            logLine('info', '[INFO] Path: ' + (data.exe || data.name || 'loader') +
+              (data.method ? ' · method ' + data.method : ''));
+            if (data.game_running) {
+              logLine('info', '[INFO] ' + (data.title || g.title) + ' process is live.');
+            } else if (data.nvse_log_updated) {
+              logLine('info', '[INFO] NVSE log updated; game should be starting.');
+            } else {
+              logLine('info', '[INFO] Loader fired — if the game does not appear, run the exe from the game folder once.');
+            }
+          } else {
+            logLine('info', '[INFO] Launched vanilla (no script-extender loader).');
+          }
+          // Refresh install/running state
+          setTimeout(() => { scanFalloutGames(false); }, 800);
+        } else {
+          logLine('err', '[ERR] Launch failed: ' + (data.error || 'unknown'));
+          if (data.nvse && data.nvse.present === false) {
+            logLine('err', '[ERR] xNVSE missing from game root (need nvse_loader.exe + nvse_1_4.dll).');
+          }
+          if (data.log_tail) logLine('warn', '[NVSE LOG] ' + String(data.log_tail).slice(0, 240));
+        }
+        if (data.nvse) applyNvseStatus(data.nvse, {
+          ok: !!(data.via_nvse || data.via_extender || (data.nvse && data.nvse.present)),
+          name: data.name || (data.nvse && data.nvse.present ? 'nvse_loader.exe' : null),
+          via_nvse: !!data.via_nvse,
+          via_extender: !!(data.via_extender || data.via_nvse),
+        });
+        else if (data.name) {
+          applyNvseStatus(
+            { present: !!(data.via_extender || data.via_nvse) },
+            { ok: true, name: data.name, via_extender: !!(data.via_extender || data.via_nvse) }
+          );
+        }
+      } catch (e) {
+        const msg = (e && e.name === 'AbortError')
+          ? 'Launch request timed out — OVERSEER server is overloaded or hung. Close the console, run RUN_OVERSEER.bat again, hard-refresh (Ctrl+F5).'
+          : String(e);
+        logLine('err', '[ERR] ' + msg);
+      }
+      launchBusy = false;
+      // re-enable after short delay; tickPerf also updates state
+      setTimeout(() => {
+        updateLaunchButton();
+        if (caret) caret.disabled = false;
+      }, 1200);
+    }
+
+    async function autoDetect() {
+      logLine('info', '[INFO] Auto-detecting FNV / plugins.txt / Vortex…');
+      const res = await fetch('/api/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apply: true, overwrite_empty: true }),
+      });
+      const data = await res.json();
+      if (data.config) {
+        document.getElementById('mods-path').value = data.config.mods_path || '';
+        document.getElementById('plugins-txt').value = data.config.plugins_txt || '';
+      }
+      if (data.mods) renderMods(data.mods);
+      await loadModsAll(true);
+      const d = data.detected || {};
+      logLine('info', `[INFO] plugins.txt: ${d.plugins_txt || 'not found'}`);
+      logLine('info', `[INFO] Data: ${d.mods_path || 'not found'}`);
+      logLine('info', `[INFO] Game: ${d.game_path || 'not found'}`);
+      logLine('info', `[INFO] Vortex data: ${d.vortex_root || 'not found'}`);
+      if (d.vortex_exe) logLine('info', `[INFO] Vortex.exe: ${d.vortex_exe}`);
+      if (d.nvse) applyNvseStatus(d.nvse, null);
+      if (data.mods && data.mods.ok) logLine('info', `[INFO] Loaded ${data.mods.count} plugins`);
+      // refresh vortex + launch from live status
+      try {
+        const st = await (await fetch('/api/game/status')).json();
+        applyNvseStatus(st.nvse, st.launch);
+        applyVortexStatus(st.vortex);
+      } catch (_) {}
+    }
+
+    async function rescanDocs() {
+      logLine('info', '[INFO] Rescanning knowledge…');
+      const res = await fetch('/api/docs/scan', { method: 'POST' });
+      const data = await res.json();
+      renderDocs(data);
+      logLine('info', `[INFO] Docs scan done — ${data.chunks} chunks`);
+    }
+
+    async function saveAndScanMods() {
+      const mods_path = document.getElementById('mods-path').value.trim();
+      const plugins_txt = document.getElementById('plugins-txt').value.trim();
+      logLine('info', '[INFO] Scanning mods…');
+      const res = await fetch('/api/mods/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mods_path, plugins_txt, save: true }),
+      });
+      const data = await res.json();
+      renderMods(data);
+      if (data.ok) logLine('info', `[INFO] Found ${data.count} plugins (${data.source})`);
+      else logLine('warn', '[WARN] ' + (data.error || 'mod scan failed'));
+    }
+    async function rescanMods() {
+      // Multi-game tab refresh + keep legacy single-path scan
+      await loadModsAll(true);
+      return saveAndScanMods();
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = '';
+      logLine('user', 'You> ' + message);
+      document.getElementById('btn-send').disabled = true;
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: chatHistory }),
+        });
+        const data = await res.json();
+        const reply = data.reply || data.error || '(no reply)';
+        logLine('bot', reply);
+        chatHistory.push({ role: 'user', content: message });
+        chatHistory.push({ role: 'assistant', content: reply });
+        if (chatHistory.length > 16) chatHistory = chatHistory.slice(-16);
+      } catch (e) {
+        logLine('err', '[ERR] ' + e);
+      }
+      document.getElementById('btn-send').disabled = false;
+      input.focus();
+    }
+
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendChat();
+    });
+
+    let perfInFlight = false;
+    async function tickPerf() {
+      if (perfInFlight) return;
+      perfInFlight = true;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 5000);
+        const res = await fetch('/api/perf', { signal: ctrl.signal });
+        clearTimeout(t);
+        const p = await res.json();
+        const cpu = p.cpu_percent != null ? p.cpu_percent : 0;
+        const ram = p.ram_percent != null ? p.ram_percent : 0;
+        // Accept any real NVIDIA source (pynvml or nvidia-smi fallback)
+        gpuLive = p.gpu_percent != null && p.gpu_percent !== '' && !Number.isNaN(Number(p.gpu_percent))
+          && (p.gpu_source === 'nvidia' || p.gpu_source === 'nvidia-smi' || Number(p.gpu_percent) >= 0)
+          && p.gpu_source !== 'none' && p.gpu_source != null;
+        // If percent present but source missing, still show it
+        if (!gpuLive && p.gpu_percent != null && !Number.isNaN(Number(p.gpu_percent))) {
+          gpuLive = true;
+        }
+        const gpu = gpuLive ? Number(p.gpu_percent) : 0;
+
+        pushVal('cpu', cpu);
+        pushVal('ram', ram);
+        pushVal('gpu', gpu);
+
+        document.getElementById('val-cpu').textContent = Math.round(cpu) + '%';
+        document.getElementById('val-ram').textContent =
+          p.ram_used_gb != null ? `${Math.round(ram)}% (${p.ram_used_gb}G)` : Math.round(ram) + '%';
+
+        const gEl = document.getElementById('val-gpu');
+        if (gpuLive) {
+          let gtxt = Math.round(gpu) + '%';
+          if (p.gpu_mem_used_gb != null && p.gpu_mem_total_gb != null) {
+            gtxt += ` · ${p.gpu_mem_used_gb}/${p.gpu_mem_total_gb}G`;
+          }
+          gEl.textContent = gtxt;
+          gEl.className = gpu > 85 ? 'hot' : '';
+          document.getElementById('card-gpu').classList.remove('na');
+        } else {
+          gEl.textContent = 'N/A';
+          gEl.className = 'muted';
+          document.getElementById('card-gpu').classList.add('na');
+        }
+
+        // In-game FPS from RTSS / Afterburner / PresentMon (real hook — not estimated)
+        const fpsVal = (p.fps_available && p.fps != null && !Number.isNaN(Number(p.fps)))
+          ? Number(p.fps) : null;
+        fpsLive = fpsVal != null;
+        pushVal('fps', fpsLive ? fpsVal : 0);
+        if (fpsLive) {
+          fpsMaxY = Math.max(60, Math.ceil(Math.max(fpsVal, ...series.fps) / 30) * 30);
+        }
+        const fpsEl = document.getElementById('b-fps');
+        const fpsHead = document.getElementById('val-fps');
+        const fpsCard = document.getElementById('card-fps');
+        const fpsHint = document.getElementById('fps-hint');
+        const hookedWaiting = !fpsLive && p.game_running && (
+          p.fps_hooked ||
+          p.fps_source === 'presentmon' ||
+          p.fps_source === 'rtss' ||
+          p.fps_source === 'afterburner' ||
+          (p.fps_note && /HOOKED|PresentMon|waiting for/i.test(String(p.fps_note))) ||
+          (p.fps_backends && p.fps_backends.presentmon_running)
+        );
+        if (fpsLive) {
+          const txt = Math.round(fpsVal) + ' FPS';
+          if (fpsEl) {
+            fpsEl.textContent = txt;
+            fpsEl.className = fpsVal < 30 ? 'v warn' : 'v';
+            fpsEl.title = (p.fps_note || p.fps_source || 'hook') + '';
+          }
+          if (fpsHead) {
+            fpsHead.textContent = txt;
+            fpsHead.className = fpsVal < 30 ? 'hot' : '';
+          }
+          if (fpsCard) fpsCard.classList.remove('na');
+        } else if (hookedWaiting) {
+          if (fpsEl) {
+            fpsEl.textContent = 'HOOKED';
+            fpsEl.className = 'v warn';
+            fpsEl.title = p.fps_note || 'PresentMon running — focus FNV to sample frames';
+          }
+          if (fpsHead) {
+            fpsHead.textContent = 'FOCUS FNV';
+            fpsHead.className = 'muted';
+          }
+          if (fpsCard) fpsCard.classList.remove('na');
+        } else if (p.game_running) {
+          if (fpsEl) {
+            fpsEl.textContent = 'NO HOOK';
+            fpsEl.className = 'v warn';
+            fpsEl.title = p.fps_note || 'Click Enable FPS and accept UAC';
+          }
+          if (fpsHead) {
+            fpsHead.textContent = 'NO HOOK';
+            fpsHead.className = 'muted';
+          }
+          if (fpsCard) fpsCard.classList.add('na');
+        } else {
+          if (fpsEl) {
+            fpsEl.textContent = '—';
+            fpsEl.className = 'v warn';
+            fpsEl.title = 'Game not running';
+          }
+          if (fpsHead) {
+            fpsHead.textContent = '—';
+            fpsHead.className = 'muted';
+          }
+          if (fpsCard) fpsCard.classList.add('na');
+        }
+        if (fpsHint) {
+          if (fpsLive) fpsHint.textContent = 'Source: ' + (p.fps_source || 'hook') + (p.fps_note ? ' · ' + p.fps_note : '');
+          else if (p.game_running) fpsHint.textContent = p.fps_note || 'No FPS hook — Enable FPS or install RTSS';
+          else fpsHint.textContent = 'Launch FNV, then Enable FPS (or run MSI Afterburner + RTSS)';
+        }
+        const stopBtn = document.getElementById('btn-fps-stop');
+        if (stopBtn && p.fps_backends) {
+          stopBtn.disabled = !p.fps_backends.presentmon_running && p.fps_source !== 'presentmon';
+        }
+
+        // Sync multi-game list from perf payload (lightweight; full rescan via Games button)
+        if (Array.isArray(p.fallout_games) && p.fallout_games.length) {
+          falloutGames = p.fallout_games;
+          if (p.selected_game_id) selectedGameId = p.selected_game_id;
+          if (p.game_id && p.game_running) selectedGameId = p.game_id;
+          const bc = document.getElementById('b-games-count');
+          if (bc && p.fallout_installed_count != null) bc.textContent = String(p.fallout_installed_count);
+          if (launchMenuOpen) renderLaunchMenu();
+          updateLaunchButton();
+        }
+
+        const titleEl = document.getElementById('b-game-title');
+        const fpsLbl = document.getElementById('lbl-fps');
+        if (p.game_running) {
+          setDot('dot-game', 'ok');
+          document.getElementById('st-game').className = 'ok';
+          const tlabel = p.game_title || p.game_short || p.game_name || 'game';
+          document.getElementById('st-game').textContent = 'RUNNING // ' + tlabel;
+          document.getElementById('b-game').textContent = p.game_name || 'yes';
+          if (titleEl) titleEl.textContent = p.game_title || p.game_short || '—';
+          if (fpsLbl) fpsLbl.textContent = (p.game_short || 'Game') + ' FPS';
+          document.getElementById('b-game-ram').textContent =
+            p.game_ram_mb != null ? p.game_ram_mb + ' MB' : '—';
+          document.getElementById('b-game-cpu').textContent =
+            p.game_cpu_percent != null ? p.game_cpu_percent + '%' : '—';
+        } else {
+          setDot('dot-game', 'off');
+          document.getElementById('st-game').className = 'warn';
+          document.getElementById('st-game').textContent = 'NOT RUNNING';
+          document.getElementById('b-game').textContent = 'off';
+          if (titleEl) titleEl.textContent = (getSelectedGame() && getSelectedGame().title) || '—';
+          if (fpsLbl) fpsLbl.textContent = 'Game FPS';
+          document.getElementById('b-game-ram').textContent = '—';
+          document.getElementById('b-game-cpu').textContent = '—';
+        }
+
+        // Script extender + Vortex live links
+        applyNvseStatus(
+          {
+            present: !!(p.nvse_present || p.script_extender_present),
+            script_extender_present: !!(p.script_extender_present || p.nvse_present),
+            loader: p.nvse_loader,
+          },
+          p.launch_ready
+            ? { ok: true, name: p.launch_exe, via_nvse: p.launch_via_nvse, via_extender: p.launch_via_extender }
+            : { ok: false }
+        );
+        applyVortexStatus({
+          running: !!p.vortex_running,
+          installed: !!p.vortex_installed,
+          name: p.vortex_name,
+          path: p.vortex_path,
+          vortex_root: p.vortex_root,
+        });
+
+        let note = fpsLive
+          ? ((p.game_title || 'Game') + ' FPS live via ' + (p.fps_source || 'hook') + '.')
+          : 'In-game FPS needs RTSS / Afterburner / Enable FPS.';
+        if (gpuLive && p.gpu_name) note += ' GPU: ' + p.gpu_name + '.';
+        else note += ' GPU % needs NVIDIA NVML (optional pynvml).';
+        if (p.game_running) note += ' ' + (p.game_title || 'Game') + ' process detected.';
+        if (p.fallout_installed_count != null) note += ' ' + p.fallout_installed_count + ' Fallout title(s) installed.';
+        if (p.vortex_running) note += ' Vortex is online.';
+        document.getElementById('perf-note').textContent = note;
+
+        document.getElementById('footer-stats').textContent =
+          `Status: ONLINE | CPU ${Math.round(cpu)}% | RAM ${Math.round(ram)}%` +
+          (gpuLive ? ` | GPU ${Math.round(gpu)}%` : ' | GPU N/A') +
+          (fpsLive ? ` | FPS ${Math.round(fpsVal)}` : (p.game_running ? ' | FPS —' : '')) +
+          (p.game_running ? (' | ' + (p.game_short || 'GAME') + ' ON') : ' | GAME OFF') +
+          (p.vortex_running ? ' | VORTEX ON' : (p.vortex_installed ? ' | VORTEX OFF' : ' | VORTEX —')) +
+          (p.script_extender_present || p.nvse_present ? ' | SE OK' : ' | SE —');
+
+        drawGraph('cpu'); drawGraph('ram'); drawGraph('gpu'); drawGraph('fps');
+      } catch (e) {
+        document.getElementById('footer-stats').textContent = 'Status: PERF ERROR';
+      } finally {
+        perfInFlight = false;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // RobCo Broadcast Relay — system loopback spectrum (+ demo fallback)
+    // -------------------------------------------------------------------------
+    const WAVE_N = 220; // oscilloscope samples (Pip-Boy radio style)
+
+    const radioState = {
+      playing: false,
+      busy: false, // true while Tune in / Stand by request is in flight
+      pollInFlight: false,
+      mode: 'off', // off | system | demo
+      device: null,
+      raf: 0,
+      pollTimer: 0,
+      gen: 0, // bumps on pause so in-flight polls are ignored
+      t0: 0,
+      phase: 0,
+      bins: new Float32Array(96),
+      // signed waveform -1..1 — spiky static line like in-game Pip-Boy radio
+      wave: new Float32Array(WAVE_N),
+      smooth: 0,
+      level: 0, // 0..1 from backend RMS/peak
+      rms: 0,
+      frames: 0,
+      lastError: null,
+    };
+
+    function radioClearBins() {
+      for (let i = 0; i < radioState.bins.length; i++) radioState.bins[i] = 0;
+      for (let i = 0; i < radioState.wave.length; i++) radioState.wave[i] = 0;
+      radioState.smooth = 0;
+      radioState.level = 0;
+      radioState.rms = 0;
+    }
+
+    /** Scroll waveform left and append `count` new signed samples. */
+    function radioPushWave(samples) {
+      const w = radioState.wave;
+      const n = w.length;
+      const k = samples.length;
+      if (k >= n) {
+        for (let i = 0; i < n; i++) w[i] = samples[k - n + i];
+        return;
+      }
+      w.copyWithin(0, k);
+      for (let i = 0; i < k; i++) w[n - k + i] = samples[i];
+    }
+
+    /**
+     * Build Pip-Boy-like spiky static samples from level 0..1 + seed noise.
+     * Hard peaks, crackle, not smooth sine.
+     */
+    function radioMakeSpikes(level, count, now) {
+      const out = new Float32Array(count);
+      const amp = Math.max(0.02, Math.min(1.15, level * 1.35));
+      const t = now * 0.001;
+      for (let i = 0; i < count; i++) {
+        // multi-band harsh noise (static)
+        const n1 = Math.random() * 2 - 1;
+        const n2 = Math.random() * 2 - 1;
+        const n3 = (Math.random() < 0.12 ? (Math.random() * 2 - 1) : 0); // needle spikes
+        const carrier = Math.sin(t * 38 + i * 0.55 + radioState.phase) * 0.15;
+        // square-ish chatter
+        const sq = Math.sign(Math.sin(t * 22 + i * 0.9)) * 0.2;
+        let v = (n1 * 0.55 + n2 * 0.25 + n3 * 0.9 + carrier + sq) * amp;
+        // occasional full radio pop
+        if (Math.random() < 0.04 * amp) v = (Math.random() < 0.5 ? -1 : 1) * (0.7 + Math.random() * 0.3) * amp;
+        // hard clip for that jagged CRT look
+        if (v > 1) v = 1;
+        if (v < -1) v = -1;
+        // quantize slightly (retro)
+        v = Math.round(v * 14) / 14;
+        out[i] = v;
+      }
+      return out;
+    }
+
+    function radioSetUi() {
+      const playBtn = document.getElementById('btn-radio-play');
+      const pauseBtn = document.getElementById('btn-radio-pause');
+      const meta = document.getElementById('radio-meta');
+      const strength = document.getElementById('radio-strength');
+      const sub = document.getElementById('radio-subtitle');
+      if (!playBtn || !pauseBtn) return;
+      // Labels never change — fixed button geometry
+      playBtn.textContent = '▶ TUNE IN';
+      pauseBtn.textContent = '❚❚ STAND BY';
+      playBtn.disabled = !!radioState.playing || !!radioState.busy;
+      pauseBtn.disabled = !radioState.playing || !!radioState.busy;
+      playBtn.classList.toggle('active-play', radioState.playing && radioState.mode !== 'off');
+      pauseBtn.classList.toggle('active-play', false);
+      const dev = radioState.device
+        ? String(radioState.device).replace(/</g, '').slice(0, 28)
+        : 'default output';
+      // Always exactly 3 lines — fixed meta box
+      if (radioState.playing && radioState.mode === 'system') {
+        if (meta) {
+          meta.innerHTML =
+            'Status: <span class="live">CARRIER LOCK</span><br />Src: ' +
+            dev +
+            '<br />Lvl: … · rms … · f …';
+        }
+        if (sub) sub.textContent = 'system loopback · live host audio';
+      } else if (radioState.playing && radioState.mode === 'demo') {
+        if (meta) {
+          meta.innerHTML =
+            'Status: <span class="hot">DEMO CARRIER</span><br />Src: procedural<br />Lvl: DEMO · rms — · f —';
+        }
+        if (sub) sub.textContent = 'demo carrier · loopback unavailable';
+      } else {
+        if (meta) {
+          meta.innerHTML =
+            'Status: <span class="hot">NO CARRIER</span><br />Src: —<br />Lvl: — · rms — · f —';
+        }
+        if (strength) strength.textContent = '———';
+        if (sub) sub.textContent = 'Mojave airwave monitor · system loopback';
+      }
+    }
+
+    function radioApplyLevels(data) {
+      if (!data) return;
+      // Prefer backend level/rms/peak — drive spikes hard from real audio
+      if (typeof data.level === 'number') {
+        radioState.level = radioState.level * 0.2 + data.level * 0.8;
+      }
+      if (typeof data.rms === 'number') {
+        radioState.rms = data.rms;
+        const mapped = Math.min(1, Math.log1p(data.rms * 100) / Math.log1p(100));
+        radioState.level = Math.max(radioState.level, mapped);
+      }
+      if (typeof data.peak === 'number' && data.peak > 0) {
+        radioState.level = Math.max(radioState.level, Math.min(1, data.peak * 1.2));
+      }
+      const arr = data.bins;
+      if (arr && arr.length) {
+        const n = radioState.bins.length;
+        let sum = 0;
+        for (let i = 0; i < n; i++) {
+          const v = Math.max(0, Math.min(1, Number(arr[i] || 0)));
+          radioState.bins[i] = radioState.bins[i] * 0.3 + v * 0.7;
+          sum += radioState.bins[i];
+        }
+        radioState.smooth = sum / n;
+        radioState.level = Math.max(radioState.level, radioState.smooth);
+      }
+      const level = Math.max(radioState.level, radioState.smooth * 0.9);
+      radioPushWave(radioMakeSpikes(level, 14, performance.now()));
+    }
+
+    function radioFillDemoBins(now) {
+      radioState.phase += 0.14;
+      const t = (now - radioState.t0) / 1000;
+      // Fake station: alternating chatter / music pulse / dead air
+      const gate = 0.35 + 0.65 * Math.max(0, Math.sin(t * 1.7));
+      const bed = 0.2 + 0.15 * Math.sin(t * 0.4);
+      const level = Math.min(1, bed + gate * 0.55);
+      radioState.smooth = radioState.smooth * 0.7 + level * 0.3;
+      radioPushWave(radioMakeSpikes(level, 8, now));
+    }
+
+    function radioDecayBins() {
+      let alive = false;
+      for (let i = 0; i < radioState.bins.length; i++) {
+        radioState.bins[i] *= 0.86;
+      }
+      for (let i = 0; i < radioState.wave.length; i++) {
+        radioState.wave[i] *= 0.82;
+        if (Math.abs(radioState.wave[i]) > 0.01) alive = true;
+      }
+      radioState.smooth *= 0.86;
+      return alive;
+    }
+
+    function drawRadio() {
+      const canvas = document.getElementById('graph-radio');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth || 400;
+      const h = 88;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const stroke = cssVar('--graph-stroke');
+      const muted = cssVar('--fg-muted');
+      const dim = cssVar('--fg-dim');
+      const bright = cssVar('--fg-bright');
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Pip-Boy CRT grid (subtle)
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i++) {
+        const y = (h / 4) * i;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      // center carrier line
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = dim;
+      ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      const wave = radioState.wave;
+      const n = wave.length;
+      const mid = h / 2;
+      const amp = h * 0.42;
+
+      // faint secondary ghost (old CRT phosphor lag)
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const y = mid - wave[i] * amp * 0.85;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.35;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // main spiky radio trace — sharp joins, no smoothing
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const y = mid - wave[i] * amp;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.6;
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 8;
+      ctx.shadowColor = stroke;
+      ctx.shadowBlur = radioState.playing ? 10 : 3;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // bright core line on top (hot phosphor)
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = (i / (n - 1)) * w;
+        const y = mid - wave[i] * amp;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = bright;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // scan bar
+      if (radioState.playing) {
+        const tickX = ((performance.now() / 16) % w);
+        ctx.strokeStyle = dim;
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath(); ctx.moveTo(tickX, 0); ctx.lineTo(tickX, h); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      const strength = document.getElementById('radio-strength');
+      if (strength && radioState.playing) {
+        const s = Math.max(radioState.level, radioState.smooth);
+        strength.textContent =
+          s > 0.45 ? 'SIG STRONG' : s > 0.18 ? 'SIG FAIR' : s > 0.04 ? 'SIG WEAK' : 'SIG NULL';
+      }
+    }
+
+    async function radioFetchJson(url, opts) {
+      const res = await fetch(url, opts);
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      const text = await res.text();
+      if (!ct.includes('application/json') || text.trimStart().startsWith('<')) {
+        throw new Error(
+          'Radio API not loaded on this server (got HTML). Close the OVERSEER console window fully, then run RUN_OVERSEER.bat again.'
+        );
+      }
+      try {
+        return { res, data: JSON.parse(text) };
+      } catch (e) {
+        throw new Error('Bad radio API response (not JSON). Restart OVERSEER.');
+      }
+    }
+
+    async function radioPollLevels() {
+      if (!radioState.playing || radioState.mode !== 'system') return;
+      // One in-flight poll at a time — 50ms spam was starving /api/game/* (NVSE fetch fails)
+      if (radioState.pollInFlight) return;
+      radioState.pollInFlight = true;
+      const gen = radioState.gen;
+      try {
+        const { data } = await radioFetchJson('/api/radio/levels');
+        // Drop stale responses after Stand by
+        if (gen !== radioState.gen || !radioState.playing || radioState.mode !== 'system') return;
+        radioApplyLevels(data);
+        if (data.device) radioState.device = data.device;
+        if (typeof data.frames === 'number') radioState.frames = data.frames;
+        const meta = document.getElementById('radio-meta');
+        if (meta && radioState.playing && radioState.mode === 'system') {
+          const dev = String(data.device || radioState.device || '—').replace(/</g, '').slice(0, 28);
+          const pct = Math.round(Math.min(1, Math.max(radioState.level, data.level || 0)) * 100);
+          const rms = (typeof data.rms === 'number') ? data.rms.toFixed(4) : '—';
+          const fr = data.frames != null ? data.frames : '—';
+          let sig;
+          if (pct >= 3) sig = '<span class="live">CARRIER LOCK</span>';
+          else if (fr > 5) sig = '<span class="hot">SILENT DEVICE</span>';
+          else sig = '<span class="hot">ARMING…</span>';
+          meta.innerHTML =
+            'Status: ' + sig + '<br />Src: ' + dev +
+            '<br />Lvl: ' + pct + '% · rms ' + rms + ' · f ' + fr;
+          const note = document.getElementById('radio-note');
+          if (note && pct < 3 && fr > 20) {
+            note.textContent =
+              'Live but silent on DEFAULT output (' + dev + '). Set real speakers Default, then Stand by → Tune in.';
+          } else if (note && pct >= 3) {
+            note.textContent =
+              'Carrier locked on default Windows playback. Stand by stops capture only (not YouTube/FNV).';
+          }
+        }
+        if (data.error) {
+          radioState.lastError = data.error;
+          if (!data.running) {
+            radioState.mode = 'demo';
+            radioSetUi();
+            const note = document.getElementById('radio-note');
+            if (note) {
+              note.textContent =
+                'Loopback dropped (' + data.error + ') — demo carrier active. Stand by, then Tune in to retry.';
+            }
+          }
+        }
+      } catch (e) {
+        /* ignore transient poll errors while server restarts */
+      } finally {
+        radioState.pollInFlight = false;
+      }
+    }
+
+    function radioFrame(now) {
+      if (radioState.playing) {
+        if (radioState.mode === 'demo') {
+          radioFillDemoBins(now);
+        } else if (radioState.mode === 'system') {
+          // Between polls: keep scope scrolling using last measured level
+          // (0 when silent so dead air is flat — no fake 0.04 floor)
+          const lvl = radioState.level > 0.01 ? radioState.level : radioState.smooth;
+          if (lvl > 0.008) {
+            radioPushWave(radioMakeSpikes(lvl, 6, now));
+          } else {
+            // gentle decay toward silence
+            radioPushWave(radioMakeSpikes(0.02, 3, now));
+          }
+        }
+        drawRadio();
+        radioState.raf = requestAnimationFrame(radioFrame);
+      } else {
+        const alive = radioDecayBins();
+        drawRadio();
+        if (alive) radioState.raf = requestAnimationFrame(radioFrame);
+        else radioState.raf = 0;
+      }
+    }
+
+    async function radioPlay() {
+      if (radioState.playing || radioState.busy) return;
+      radioState.busy = true;
+      radioSetUi();
+      const note = document.getElementById('radio-note');
+
+      // Backend start() already hard-stops prior session; skip double-stop to avoid races
+      radioState.gen += 1;
+      const myGen = radioState.gen;
+      radioState.playing = true;
+      radioState.t0 = performance.now();
+      radioState.lastError = null;
+      radioState.mode = 'system';
+      radioState.frames = 0;
+      radioClearBins();
+      radioSetUi();
+
+      let systemOk = false;
+      try {
+        const { data } = await radioFetchJson('/api/radio/start', { method: 'POST' });
+        // User may have pressed Stand by while start was in flight
+        if (myGen !== radioState.gen || !radioState.playing) {
+          radioState.busy = false;
+          radioSetUi();
+          return;
+        }
+        if (
+          data.running ||
+          data.mode === 'system' ||
+          (data.ok && data.available !== false && !data.error) ||
+          (data.frames > 0)
+        ) {
+          if (data.error && !data.running && !(data.frames > 0)) {
+            radioState.lastError = data.error;
+          } else {
+            systemOk = true;
+            radioState.mode = 'system';
+            radioState.device = data.device || null;
+            if (note) {
+              const dev = data.device ? String(data.device).slice(0, 36) : '';
+              note.textContent =
+                'Carrier locked' +
+                (data.backend ? ' [' + data.backend + ']' : '') +
+                (dev ? ' · ' + dev : '') +
+                '. Stand by stops capture only.';
+            }
+          }
+        } else {
+          radioState.lastError = data.error || 'loopback unavailable';
+        }
+      } catch (e) {
+        radioState.lastError = String(e && e.message ? e.message : e);
+      }
+
+      if (myGen !== radioState.gen || !radioState.playing) {
+        radioState.busy = false;
+        radioSetUi();
+        return;
+      }
+
+      if (!systemOk) {
+        radioState.mode = 'demo';
+        if (note) {
+          const err = radioState.lastError || '';
+          if (
+            err.indexOf('relaunch') !== -1 ||
+            err.indexOf('Radio API not') !== -1 ||
+            err.indexOf('Restart') !== -1 ||
+            err.indexOf('RUN_OVERSEER') !== -1
+          ) {
+            note.textContent = err + ' Demo carrier active until then.';
+          } else {
+            note.textContent =
+              'Loopback failed' +
+              (err ? ' (' + err.slice(0, 48) + ')' : '') +
+              ' — demo. Restart OVERSEER; pip install soundcard';
+          }
+        }
+      }
+      radioState.busy = false;
+      radioSetUi();
+
+      if (radioState.pollTimer) clearInterval(radioState.pollTimer);
+      if (radioState.mode === 'system') {
+        // ~8 Hz is enough for the scope; faster rates flood Flask and break Launch/NVSE
+        radioState.pollTimer = setInterval(radioPollLevels, 120);
+        radioPollLevels();
+        setTimeout(radioPollLevels, 200);
+        setTimeout(radioPollLevels, 500);
+      }
+      if (radioState.raf) cancelAnimationFrame(radioState.raf);
+      radioState.raf = requestAnimationFrame(radioFrame);
+    }
+
+    async function radioPause() {
+      if (!radioState.playing || radioState.busy) return;
+      radioState.busy = true;
+      // Instant local stand-by (UI freezes geometry via fixed CSS)
+      radioState.gen += 1;
+      radioState.playing = false;
+      radioState.mode = 'off';
+      if (radioState.pollTimer) {
+        clearInterval(radioState.pollTimer);
+        radioState.pollTimer = 0;
+      }
+      radioClearBins();
+      radioSetUi();
+      drawRadio();
+      if (!radioState.raf) radioState.raf = requestAnimationFrame(radioFrame);
+      const note = document.getElementById('radio-note');
+      if (note) {
+        note.textContent =
+          'Stand by — relay closed. Tune in again to re-arm loopback (does not pause YouTube/FNV).';
+      }
+      try {
+        await radioFetchJson('/api/radio/stop', { method: 'POST' });
+      } catch (_) { /* ignore */ }
+      radioState.busy = false;
+      radioSetUi();
+    }
+
+    window.radioPlay = radioPlay;
+    window.radioPause = radioPause;
+
+    boot();
+    setInterval(tickPerf, 1000);
+    // Refresh Ollama online/offline every 15s (does not require modal open)
+    setInterval(refreshOllamaStatus, 15000);
+    setTimeout(refreshOllamaStatus, 2000);
+    radioSetUi();
+    drawRadio();
+    // probe capture support once
+    radioFetchJson('/api/radio').then(({ data: d }) => {
+      const note = document.getElementById('radio-note');
+      if (!note) return;
+      if (d.available === false) {
+        note.textContent =
+          'Loopback library missing — Tune in uses demo carrier. Run: pip install soundcard  then restart OVERSEER.';
+      } else {
+        note.textContent =
+          'Tune in locks WASAPI loopback on the default playback device (game / browser / anything on speakers). Stand by stops capture only.';
+      }
+    }).catch((e) => {
+      const note = document.getElementById('radio-note');
+      if (note) {
+        note.textContent =
+          (e && e.message ? e.message : 'Radio API offline.') +
+          ' Demo still works after Tune in; full loopback needs a restarted OVERSEER with soundcard installed.';
+      }
+    });
+    window.addEventListener('resize', () => {
+      drawGraph('cpu'); drawGraph('ram'); drawGraph('gpu');
+      drawRadio();
+    });
+  </script>
+</body>
+</html>

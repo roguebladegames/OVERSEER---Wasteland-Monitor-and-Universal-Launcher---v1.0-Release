@@ -1,0 +1,130 @@
+[
+  {
+    "chunk_id": "chunk_001",
+    "source": "Original_Curated",
+    "system": "practical_knowledge",
+    "entity_type": "concept",
+    "entity_name": "dirty_edit",
+    "content": "A dirty edit is when a mod changes a record it did not intend to modify. This often happens when using the Creation Kit or GECK and accidentally saving changes to unrelated records. In xEdit these appear as ITM (Identical To Master) records. They cause unnecessary conflicts with other mods.",
+    "metadata": {
+      "topics": ["dirty_edit", "conflict"],
+      "fix_action": "Use xEdit to clean the mod by removing ITM records where the change was unintentional. Create a patch mod for intentional changes instead.",
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_002",
+    "source": "Original_Curated",
+    "system": "practical_knowledge",
+    "entity_type": "concept",
+    "entity_name": "load_order_conflict",
+    "content": "Load order conflicts occur when two or more mods modify the same record (CELL, NPC, item, quest, etc.). The mod that loads later wins. This can break quests, change intended behavior, or cause crashes if scripts conflict.",
+    "metadata": {
+      "topics": ["load_order", "conflict"],
+      "fix_action": "Identify the conflicting records in xEdit. Create a small patch mod that merges the desired changes from both mods.",
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_003",
+    "source": "Original_Curated",
+    "system": "engine",
+    "entity_type": "record_type",
+    "entity_name": "CELL",
+    "content": "CELL records represent game cells (interiors and exteriors). Mods frequently conflict on CELL records when they move objects, change lighting, add new references, or alter navmesh. These are among the most common sources of visual and pathing conflicts.",
+    "metadata": {
+      "topics": ["conflict", "world_editing"],
+      "related_record_types": ["REFR", "LAND", "NAVM"],
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_004",
+    "source": "Original_Curated",
+    "system": "engine",
+    "entity_type": "function",
+    "entity_name": "player.additem",
+    "content": "player.additem <formID> <amount> adds a specified number of an item to the player's inventory. The formID is the unique identifier of the item. This is one of the most commonly used console commands for testing and cheating.",
+    "metadata": {
+      "function_signature": "player.additem <formID> <amount>",
+      "topics": ["console", "testing"],
+      "priority": "medium"
+    }
+  },
+  {
+    "chunk_id": "chunk_005",
+    "source": "Original_Curated",
+    "system": "practical_knowledge",
+    "entity_type": "procedure",
+    "entity_name": "cleaning_mod_with_xedit",
+    "content": "To clean a mod in xEdit: Load the mod and its masters. Right-click the mod name and select 'Clean Masters'. Review and remove ITM records that represent unintended changes. Save the cleaned version. Always back up your mods first.",
+    "metadata": {
+      "topics": ["dirty_edit", "xedit"],
+      "fix_action": "Run xEdit cleaning procedure on any mod that shows many ITM records.",
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_006",
+    "source": "Original_Curated",
+    "system": "engine",
+    "entity_type": "record_type",
+    "entity_name": "QUST",
+    "content": "QUST records control quests. Conflicts here often break quest progression because two mods try to set different stages or modify the same quest objectives and variables.",
+    "metadata": {
+      "topics": ["quest", "conflict", "script"],
+      "fix_action": "Create a patch that decides which mod controls the quest stages. Use NVSE to safely manage quest variables when needed.",
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_007",
+    "source": "Original_Curated",
+    "system": "script_extender",
+    "entity_type": "best_practice",
+    "entity_name": "nvse_scripting",
+    "content": "When using NVSE, avoid directly editing vanilla quests and form lists when possible. Instead, create new quests or use patches. Register events carefully to prevent multiple mods fighting over the same handlers. Always test with a clean save after adding new NVSE-dependent mods.",
+    "metadata": {
+      "topics": ["nvse", "script_conflict"],
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_008",
+    "source": "Original_Curated",
+    "system": "practical_knowledge",
+    "entity_type": "concept",
+    "entity_name": "patch_mod",
+    "content": "A patch mod is a small, lightweight mod created specifically to resolve conflicts between two or more other mods. It contains only the records that need to be merged or overridden. Good patches are essential for large mod lists.",
+    "metadata": {
+      "topics": ["conflict", "patching"],
+      "fix_action": "Create patch mods in xEdit or the Creation Kit when conflicts are found. Name them clearly (e.g., MyMod1_MyMod2_Patch).",
+      "priority": "high"
+    }
+  },
+  {
+    "chunk_id": "chunk_009",
+    "source": "Original_Curated",
+    "system": "engine",
+    "entity_type": "function",
+    "entity_name": "setstage",
+    "content": "setstage <questID> <stage> advances a quest to a specific stage number. This is commonly used in console commands and scripts to progress or reset quests during testing or to fix broken quest states.",
+    "metadata": {
+      "function_signature": "setstage <questID> <stage>",
+      "topics": ["quest", "console", "testing"],
+      "priority": "medium"
+    }
+  },
+  {
+    "chunk_id": "chunk_010",
+    "source": "Original_Curated",
+    "system": "practical_knowledge",
+    "entity_type": "procedure",
+    "entity_name": "diagnosing_crash",
+    "content": "When diagnosing crashes: Check the nvse.log and FalloutNV.log files in the game folder. Look for script errors, missing masters, or form ID issues. Test with mods disabled one by one. Use a clean save when possible. Common causes include dirty edits, incompatible script extenders, and conflicting quest modifications.",
+    "metadata": {
+      "topics": ["crash", "troubleshooting"],
+      "priority": "high"
+    }
+  }
+]
